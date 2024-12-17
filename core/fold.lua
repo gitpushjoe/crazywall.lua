@@ -2,15 +2,11 @@ local utils = require"core.utils"
 local s = require "core.strings"
 local str = utils.str
 local Section = require "core.section"
+local Context = require "core.context"
 
 local M = {}
 
-M.parse = function (inp, config)
-	if (type(inp) ~= type("")) then
-		error "Expected input to fold to be string"
-	end
-	local lines = str.split_lines(inp, true)
-	local i = 0
+M.parse = function (context)
 	local section = Section:new(
 		-1,
 		-1,
@@ -18,12 +14,13 @@ M.parse = function (inp, config)
 		{},
 		nil
 	)
+	local config = context.config
 	local alias_length = config[s.ALIAS_LENGTH]
 	local open_section_symbol = config[s.OPEN_SECTION_SYMBOL]
 	local close_section_symbol = config[s.CLOSE_SECTION_SYMBOL]
 	local note_types =  config[s.NOTE_TYPES]
-	for line in lines do
-		i = i + 1
+	utils.print(context)
+	for i, line in ipairs(context.lines) do
 		if #line < config[s.ALIAS_LENGTH] then
 			goto continue
 		end

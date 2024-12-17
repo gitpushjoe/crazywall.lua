@@ -34,7 +34,27 @@ o> This is something else
 local config = default_config.config
 config_module.expand_partial_config(config)
 
+local virt_filesystem = {
+	root={
+		p={
+			["012345.txt"]=example_file,
+		},
+		r={
+		},
+		f={
+		},
+		["some_file.txt"]="foo"
+	}
+}
+
+local context = Context:new(
+	config,
+	"/root/p/012345.txt",
+	example_file,
+	virt_filesystem
+)
+
 -- utils.print(config)
 -- print(#fold.fold(example_file, config).children)
-local parsed = fold.parse(example_file, config)
-utils.print(parsed)
+local parsed = fold.parse(context)
+print(utils.inspect(parsed))
