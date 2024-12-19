@@ -6,6 +6,7 @@ local default_config = require "core.defaults.config"
 local config_module = require "core.config"
 local fold = require "core.fold"
 local VirtualFilesystem = require "core.virtual_filesystem.vfs"
+local Path = require "core.path"
 
 -- utils.tprint(arg)
 --
@@ -67,15 +68,10 @@ local context = Context:new(
 	example_file,
 	vfs
 )
--- local file, err = vfs.io:open("/root/home/user/p/bar.txt", "w")
--- print(utils.inspect({file, err}))
-
 
 utils.print(config)
 local root = fold.parse(context)
--- print("parsed", utils.inspect(root))
 print("\\/")
 fold.prepare(root, context)
 
--- print(utils.inspect(parsed))
--- print(
+print(Path:new(arg[#arg]))

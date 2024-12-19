@@ -13,6 +13,8 @@ local s = require "core.strings"
 Config = {}
 Config.__index = Config
 
+---@param config_table ConfigTable
+---@return Config
 function Config:new(config_table)
 	self = {}
 	setmetatable(self, Config)
