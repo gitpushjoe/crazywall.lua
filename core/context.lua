@@ -1,11 +1,23 @@
-local utils = require"core.utils"
+local utils = require "core.utils"
 local str = utils.str
+
+---@class (exact) Context
+---@field config Config
+---@field path string
+---@field inp string
+---@field lines string[]
+---@field use_virt boolean
 Context = {}
 Context.__index = Context
 
+
+---@param config Config
+---@param path string
+---@param inp string
+---@return Context
 function Context:new(config, path, inp, virt_filesystem)
 	self = {}
-	setmetatable({}, self)
+	setmetatable(self, Context)
 	self.config = config or {}
 	self.path = path
 	self.use_virt = not not virt_filesystem

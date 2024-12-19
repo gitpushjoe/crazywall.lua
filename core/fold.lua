@@ -1,71 +1,64 @@
 local utils = require"core.utils"
 local s = require "core.strings"
 local str = utils.str
-local Section = require "core.section"
 local Context = require "core.context"
+local Section = require "core.section"
+local traverse = require "core.traverse"
 
 local M = {}
 
+---@param context Context
 M.parse = function (context)
 	local section = Section:new(
-		-1,
+		utils.read_only({"ROOT"}),
 		-1,
 		-1,
 		{},
 		nil
 	)
 	local config = context.config
-	local alias_length = config[s.ALIAS_LENGTH]
-	local open_section_symbol = config[s.OPEN_SECTION_SYMBOL]
-	local close_section_symbol = config[s.CLOSE_SECTION_SYMBOL]
-	local note_types =  config[s.NOTE_TYPES]
-	utils.print(context)
+	local open_section_symbol = config.open_section_symbol
+	local close_section_symbol = config.close_section_symbol
+	local note_schema =  config.note_schema
 	for i, line in ipairs(context.lines) do
-		if #line < config[s.ALIAS_LENGTH] then
-			goto continue
-		end
-		if line:sub(alias_length + 1, #open_section_symbol + 1) == open_section_symbol then
-			local note_key_idx = nil
-			for note_idx, note_type in ipairs(note_types) do
-				local prefix = note_type[2]
-				if (str.starts_with(line, prefix)) then
-					note_key_idx = note_idx
-					break
-				end
-			end
-			if not note_key_idx then
-				goto continue
-			end
-			local curr = Section:new(
-				note_key_idx,
-				i,
-				nil,
-				{},
-				section
-			)
-			if section then
+		for note_idx, note_type in ipairs(note_schema) do
+			local prefix = note_type[2] .. open_section_symbol
+			if (str.starts_with(line, prefix)) then
+				local curr = Section:new(
+					utils.read_only(config.note_schema[note_idx]),
+					i,
+					nil,
+					{},
+					section
+				)
 				table.insert(section.children, curr)
+				section = curr
+				break
 			end
-			section = curr
 		end
-		if line:sub(1, #close_section_symbol) == close_section_symbol then
-			local note_key_idx = nil
-			for note_idx, note_type in ipairs(note_types) do
-				local prefix = note_type[2]
-				if (line:sub(#close_section_symbol + 1, alias_length + 1) == prefix) then
-					note_key_idx = note_idx
-					break
-				end
+		for _, note_type in ipairs(note_schema) do
+			local suffix = close_section_symbol .. note_type[2]
+			if (str.ends_with(line, suffix)) then
+				section.end_line = i
+				section = section.parent
+				break
 			end
-			if not note_key_idx then
-				goto continue
-			end
-			section.end_line = i
-			section = section.parent
 		end
-		::continue::
 	end
 	return section
+end
+
+---@param section_root Section
+---@param _context Context
+M.prepare = function (section_root, _context)
+	traverse.preorder_traverse(section_root,
+	function (section)
+		print(
+			"type: " .. section.type[1],
+			"lines: " .. section.start_line .. " " .. section.end_line,
+			"parent_type: " .. (section.parent and section.parent.type[1] or "nil"))
+	end
+	)
 end
 
 return M

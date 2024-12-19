@@ -1,15 +1,23 @@
-local str = {}
+local M = {}
 
-str.starts_with = function(inp, prefix)
-	return string.sub(inp, 1, #prefix) == prefix
-end
+M.str = {
+	starts_with = function(inp, prefix)
+		return string.sub(inp, 1, #prefix) == prefix
+	end,
 
-str.split_lines = function(inp, include_empty)
-	include_empty = include_empty or false
-	return include_empty and inp:gmatch("([^\n]*)\n?") or inp:gmatch("[^\r\n]+")
-end
+	ends_with = function (str, suffix)
+		return string.sub(str, -string.len(suffix)) == suffix
+	end,
 
-local print = function (tbl, indent_level)
+	split_lines = function(inp, include_empty)
+		include_empty = include_empty or false
+		return include_empty and inp:gmatch("([^\n]*)\n?") or inp:gmatch("[^\r\n]+")
+	end
+}
+
+M.inspect = require "core.inspect"
+
+M.print = function (tbl, indent_level)
 	indent_level = indent_level or 4
 	local txt = require "core.inspect"(tbl)
 	local indent = 0
@@ -43,10 +51,16 @@ local print = function (tbl, indent_level)
 	io.write('\n')
 end
 
+M.read_only = function (tbl)
+	local proxy = {}
+	local mt = {
+		__index = tbl,
+		__newindex = function ()
+			error("attempt to update a read-only table", 2)
+		end
+	}
+	setmetatable(proxy, mt)
+	return proxy
+end
 
-
-return {
-	inspect = require "core.inspect",
-	print = print,
-	str = str
-}
+return M

@@ -1,25 +1,16 @@
 local s = require "core.strings"
+require "core.config"
 
-local config = {
-	[s.NOTE_TYPES] = {
-		{'permanent'},
-		{'reference'},
-		{'literature'},
-		{'question'},
-		{'idea'},
-	},
+local config = {}
+---@cast config ConfigTable
+
+config.note_schema = {
+	{'permanent'},
+	{'reference'},
+	{'literature'},
+	{'question'},
+	{'idea'},
 }
-
--- local config = {
--- 	[s.NOTE_TYPES] = {
--- 		{'permanent'},
--- 		{'reference'},
--- 		{'literature'},
--- 		{'question'},
--- 		{'idea'},
--- 	},
--- }
---
 
 return {
 	config=config

@@ -1,7 +1,11 @@
+local script_dir = debug.getinfo(1, "S").source:match("@(.*)/?")
+package.path = package.path .. ";" .. script_dir .. "/?.lua"
+
 local utils = require "core.utils"
 local default_config = require "core.defaults.config"
 local config_module = require "core.config"
 local fold = require "core.fold"
+local VirtualFilesystem = require "core.virtual_filesystem.vfs"
 
 -- utils.tprint(arg)
 --
@@ -19,8 +23,12 @@ r> Reference #1
 
 r> Reference #2
 This one has a body.
+r> An inner reference
+q> Some question <q
+<r
 
 <r
+
 
 r> Reference #3
 <r
@@ -31,30 +39,43 @@ o> This is something else
 <o
 ]]
 
-local config = default_config.config
-config_module.expand_partial_config(config)
+local config = Config:new(default_config.config)
 
-local virt_filesystem = {
+local virt_filesystem_structure = {
 	root={
-		p={
-			["012345.txt"]=example_file,
+		home={
+			user={
+				p={
+					["012345.txt"]=example_file,
+				},
+				r={
+				},
+				f={
+				},
+				["some_file.txt"]="foo"
+			},
 		},
-		r={
-		},
-		f={
-		},
-		["some_file.txt"]="foo"
 	}
 }
+
+local vfs = VirtualFilesystem:new(
+	virt_filesystem_structure)
 
 local context = Context:new(
 	config,
 	"/root/p/012345.txt",
 	example_file,
-	virt_filesystem
+	vfs
 )
+-- local file, err = vfs.io:open("/root/home/user/p/bar.txt", "w")
+-- print(utils.inspect({file, err}))
 
--- utils.print(config)
--- print(#fold.fold(example_file, config).children)
-local parsed = fold.parse(context)
-print(utils.inspect(parsed))
+
+utils.print(config)
+local root = fold.parse(context)
+-- print("parsed", utils.inspect(root))
+print("\\/")
+fold.prepare(root, context)
+
+-- print(utils.inspect(parsed))
+-- print(
