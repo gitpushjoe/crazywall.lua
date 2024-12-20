@@ -10,6 +10,7 @@ local VirtFS_IO = require "core.virtual_filesystem.io"
 ---@field io iolib
 VirtualFilesystem = {}
 VirtualFilesystem.__index = VirtualFilesystem
+VirtualFilesystem.__name = "VirtualFilesystem"
 
 --- @param structure VirtualFile
 --- @return VirtualFilesystem

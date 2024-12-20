@@ -1,5 +1,7 @@
+local errors = require("core.errors")
 local utils = require("core.utils")
 local Path = require("core.path")
+local validate = require("core.validate")
 local str = utils.str
 
 ---@class (exact) Context
@@ -13,25 +15,47 @@ local str = utils.str
 
 Context = {}
 Context.__index = Context
+Context.__name = "Context"
 
 ---@param config Config
 ---@param path string
 ---@param inp string|string[]
 ---@param virt_filesystem VirtualFilesystem?
----@return Context
+---@return Context?, string?
 function Context:new(config, path, inp, virt_filesystem)
 	self = {}
 	---@cast self Context
+	local invalid_type = errors.invalid_type("Context:new")
+	local invalid_instance = errors.invalid_instance("Context:new")
 	setmetatable(self, Context)
+
+	local err = validate.are_instances({
+		{ config, Config, "config" },
+		virt_filesystem
+				and { virt_filesystem, VirtualFilesystem, "virt_filesystem" }
+			or nil,
+	})
+	if err then
+		return nil, invalid_instance(err)
+	end
+
 	self.config = config or {}
-	self.path = path
 	self.use_virt = not not virt_filesystem
 	self.virt_filesystem = virt_filesystem
+
+	---@type unknown
+	err = validate.types({
+		{ path, "string", "path" },
+		{ inp, "table|string", "inp" },
+	})
+	if err then
+		return nil, invalid_type(err)
+	end
+
+	self.path = path
 	self.lines = {}
 	self.io = virt_filesystem and virt_filesystem.io or io
-	if inp == nil then
-		return self
-	end
+
 	local lines = {}
 	if type(inp) == type("") then
 		---@cast inp string
@@ -39,13 +63,20 @@ function Context:new(config, path, inp, virt_filesystem)
 		for line in data do
 			table.insert(lines, line)
 		end
-	elseif type(inp) == type({}) then
-		---@cast inp string[]
-		for _, v in ipairs(inp) do
-			table.insert(lines, tostring(v))
-		end
 	else
-		error("Invalid type for input")
+		---@cast inp string[]
+		for i, line in ipairs(inp) do
+
+			---@type unknown
+			err = validate.types({
+				{ line, "string", "inp[" .. i .. "]" },
+			})
+			if err then
+				return nil, invalid_type(err)
+			end
+
+			table.insert(lines, tostring(line))
+		end
 	end
 	self.lines = lines
 	self.src_path = Path:new(path)

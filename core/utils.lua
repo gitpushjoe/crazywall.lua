@@ -14,6 +14,15 @@ M.str = {
 		return include_empty and str:gmatch("([^\n]*)\n?") or str:gmatch("[^\r\n]+")
 	end,
 
+	split_lines_to_list = function(str, include_empty)
+		local gen = M.str.split_lines(str, include_empty)
+		local res = {}
+		for v in gen do
+			table.insert(res, v)
+		end
+		return res
+	end,
+
 	join = function(list, delim)
 		delim = delim or ""
 		local result = ""

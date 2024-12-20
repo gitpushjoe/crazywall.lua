@@ -1,42 +1,28 @@
 local script_dir = debug.getinfo(1, "S").source:match("@(.*)/?")
 package.path = package.path .. ";" .. script_dir .. "/?.lua"
 
-local utils = require "core.utils"
-local default_config = require "core.defaults.config"
-local config_module = require "core.config"
-local fold = require "core.fold"
-local VirtualFilesystem = require "core.virtual_filesystem.vfs"
-local Path = require "core.path"
+local utils = require("core.utils")
+local default_config = require("core.defaults.config")
+local fold = require("core.fold")
+local VirtualFilesystem = require("core.virtual_filesystem.vfs")
 
--- utils.tprint(arg)
---
--- local config_file = loadfile(arg[1])
--- if config_file then
--- 	config_file()
--- end
+local example_file = [[# My Notes
 
-local example_file =
-[[# My File
+r> Chapter 1
 
-r> Reference #1
+p> Article 1
+These are notes on some article.
+<p
+
+p> Article 2
+These are notes on another article.
 
 <r
 
-r> Reference #2
-This one has a body.
+p> Chapter 2
 
-r> An inner reference
-q> Some question<q
-<r
+<p
 
-<r
-(This is some text between ref #2 and ref #3.)
-r> Reference #3
-<r
-
-r> Reference #1
-This reference is annoyingly also named Reference #1
-<r
 
 >
 <
@@ -44,41 +30,49 @@ o> This is something else
 <o
 ]]
 
-local config = Config:new(default_config.config)
+local config, err = Config:new(default_config.config)
+if not config then
+	error(err)
+end
 
 local virt_filesystem_structure = {
-	root={
-		home={
-			user={
-				p={
-					["012345.txt"]=example_file,
+	root = {
+		home = {
+			user = {
+				p = {
+					["main.txt"] = example_file,
 				},
-				r={
-				},
-				f={
-				},
-				["some_file.txt"]="foo"
+				r = {},
+				f = {},
+				["some_file.txt"] = "foo",
 			},
 		},
-	}
+	},
 }
 
-local vfs = VirtualFilesystem:new(
-	virt_filesystem_structure)
+---TODO(gitpushjoe): add error checking to virtual filesystem
+local vfs = VirtualFilesystem:new(virt_filesystem_structure)
 
-local context = Context:new(
-	config,
-	"/root/home/user/p/012345.txt",
-	example_file,
-	vfs
-)
+-- example_file = utils.str.split_lines_to_list(example_file)
+-- table.insert(example_file, false)
+
+local context
+context, err =
+	Context:new(config, "/root/home/user/p/main.txt", example_file, vfs)
+
+if not context then
+	error(err)
+end
 
 utils.print(config)
-local root = fold.parse(context)
+local root
+root, err = fold.parse(context)
+if not root then
+	error(err)
+end
 fold.prepare(root, context)
 fold.execute(root, context)
 
 print()
 print(vfs)
 -- print(utils.inspect(virt_filesystem_structure))
-

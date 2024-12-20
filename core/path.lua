@@ -2,6 +2,7 @@
 ---@field parts string[]
 Path = {}
 Path.__index = Path
+Path.__name = "Path"
 
 ---@param path string|string[]|Path
 ---@return Path
