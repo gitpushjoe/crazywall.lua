@@ -64,7 +64,7 @@ local vfs = VirtualFilesystem:new(
 
 local context = Context:new(
 	config,
-	"/root/p/012345.txt",
+	"/root/home/user/p/012345.txt",
 	example_file,
 	vfs
 )

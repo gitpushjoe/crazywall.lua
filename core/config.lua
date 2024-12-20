@@ -1,15 +1,21 @@
-local s = require "core.strings"
+local s = require("core.strings")
+require("core.context")
 
----@class (exact) ConfigTable 
----@field note_schema [string, string][]
---- ["note_schema"]: [string, string][]?,
---- ["open_section_symbol"]: string?,
---- ["close_section_symbol"]: string?,
---- [string]: number}
+---@alias NoteSchema [string, string][]
+
+---@class (exact) ConfigTable
+---@field note_schema NoteSchema
+---@field open_section_symbol string?
+---@field close_section_symbol string?
+---@field resolve_directory (fun(section: Section, src_path: Path, context: Context): Path)|nil
+---@field resolve_filename (fun(section: Section, context: Context): string?)|nil
 
 ---@class Config
+---@field note_schema NoteSchema
 ---@field open_section_symbol string
 ---@field close_section_symbol string
+---@field resolve_directory fun(section: Section, src_path: Path, context: Context): Path|nil
+---@field resolve_filename (fun(section: Section, context: Context): string?)|nil
 Config = {}
 Config.__index = Config
 
@@ -17,11 +23,12 @@ Config.__index = Config
 ---@return Config
 function Config:new(config_table)
 	self = {}
+	---@cast self Config
 	setmetatable(self, Config)
 	self.open_section_symbol = config_table[s.OPEN_SECTION_SYMBOL] or "> "
 	self.close_section_symbol = config_table[s.CLOSE_SECTION_SYMBOL] or "<"
 	for _, note_type in ipairs(config_table["note_schema"]) do
-		if (type(note_type) ~= "table") then
+		if type(note_type) ~= "table" then
 			error("Expected all note types in config to be tables")
 		end
 		if #note_type < 2 then
@@ -30,6 +37,8 @@ function Config:new(config_table)
 		end
 	end
 	self.note_schema = config_table[s.NOTE_SCHEMA]
+	self.resolve_directory = config_table.resolve_directory
+	self.resolve_filename = config_table.resolve_filename
 	return self
 end
 
