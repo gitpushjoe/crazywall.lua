@@ -10,6 +10,7 @@ require("core.context")
 ---@field resolve_directory (fun(section: Section, context: Context): Path)|nil
 ---@field resolve_filename (fun(section: Section, context: Context): string?)|nil
 ---@field transform_lines (fun(section: Section, context: Context): string[])|nil
+---@field resolve_reference (fun(section: Section, context: Context): string)|nil
 ---@field allow_makedir boolean?
 
 ---@class Config
@@ -19,6 +20,7 @@ require("core.context")
 ---@field resolve_directory fun(section: Section, context: Context): Path|nil
 ---@field resolve_filename (fun(section: Section, context: Context): string?)|nil
 ---@field transform_lines (fun(section: Section, context: Context): string[])|nil
+---@field resolve_reference (fun(section: Section, context: Context): string)|nil
 ---@field allow_makedir boolean
 Config = {}
 Config.__index = Config
@@ -44,6 +46,7 @@ function Config:new(config_table)
 	self.resolve_directory = config_table.resolve_directory
 	self.resolve_filename = config_table.resolve_filename
 	self.transform_lines = config_table.transform_lines
+	self.resolve_reference = config_table.resolve_reference
 	self.allow_makedir = config_table.allow_makedir
 	return self
 end

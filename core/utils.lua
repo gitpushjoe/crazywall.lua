@@ -14,17 +14,20 @@ M.str = {
 		return include_empty and str:gmatch("([^\n]*)\n?") or str:gmatch("[^\r\n]+")
 	end,
 
-	join = function(list, delim)
+	join = function(list, delim, ignore_nil)
 		delim = delim or ""
+		ignore_nil = ignore_nil or false
 		local result = ""
 		for i, str in ipairs(list) do
-			result = result .. (i == 1 and "" or delim) .. str
+			if not (ignore_nil and str == nil) then
+				result = result .. (i == 1 and "" or delim) .. str
+			end
 		end
 		return result
 	end,
 
-	join_lines = function(list)
-		return M.str.join(list, "\n")
+	join_lines = function(list, ignore_nil)
+		return M.str.join(list, "\n", ignore_nil)
 	end,
 }
 

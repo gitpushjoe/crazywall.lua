@@ -28,6 +28,9 @@ config.allow_makedir = true
 
 config.transform_lines = function (section)
 	local lines = section:get_lines()
+	if section.parent.type[1] == "ROOT" then
+		return lines
+	end
 	table.insert(lines, "")
 	local from_text = "From:"
 	local curr = section.parent
@@ -39,6 +42,10 @@ config.transform_lines = function (section)
 	end
 	table.insert(lines, from_text)
 	return lines
+end
+
+config.resolve_reference = function(section)
+	return "[[" .. section.filename .. "]]"
 end
 
 return {

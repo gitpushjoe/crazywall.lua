@@ -20,9 +20,9 @@ end
 ---@param callback fun(section: Section): nil
 ---@return nil
 M.postorder_traverse = function (section, callback)
-	if ipairs(section.children) then
+	if section.children then
 		for _, child in ipairs(section.children) do
-			M.preorder_traverse(child, callback)
+			M.postorder_traverse(child, callback)
 		end
 	end
 	callback(section)

@@ -9,7 +9,7 @@ local M = {}
 
 ---@param ctx Context
 M.parse = function(ctx)
-	local section = Section:new(utils.read_only({ "ROOT" }), ctx, -1, -1, {}, nil)
+	local section = Section:new(utils.read_only({ "ROOT" }), ctx, 0, #ctx.lines, {}, nil)
 	local config = ctx.config
 	local open_section_symbol = config.open_section_symbol
 	local close_section_symbol = config.close_section_symbol
@@ -58,8 +58,14 @@ M.prepare = function(section_root, ctx)
 			return
 		end
 		section.lines = ctx.config.transform_lines(utils.read_only(section), utils.read_only(ctx))
-		print("set text to:\n(begin)\n" .. str.join_lines(section.lines) .. "\n(end)\n---")
+		ctx.lines[section.start_line] = ctx.config.resolve_reference(section, ctx)
+		for i=section.start_line+1,section.end_line do
+			ctx.lines[i] = nil
+		end
+		print("set text for " .. section.filename .. " to:")
+		print(str.join_lines(section.lines) .. "\n-----")
 	end)
+	print("lines: \n" .. str.join_lines(section_root:get_lines()))
 end
 
 return M

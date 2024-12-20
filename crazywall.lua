@@ -24,13 +24,13 @@ r> Reference #1
 
 r> Reference #2
 This one has a body.
+
 r> An inner reference
-q> Some question <q
+q> Some question<q
 <r
 
 <r
-
-
+(This is some text between ref #2 and ref #3.)
 r> Reference #3
 <r
 

@@ -1,6 +1,6 @@
-local utils = require "core.utils"
-require "core.path"
-require "core.context"
+local utils = require("core.utils")
+require("core.path")
+require("core.context")
 
 ---@class Section
 ---@field type [string, string]
@@ -37,9 +37,13 @@ end
 ---@return string[]
 function Section:get_lines()
 	local lines = {}
-	for i = self.start_line,self.end_line do
-		table.insert(lines, self.context.lines[i])
+	for i = self.start_line, self.end_line do
+		local line = self.context.lines[i]
+		if line ~= nil then
+			table.insert(lines, self.context.lines[i])
+		end
 	end
+	-- print(self.start_line, self.end_line)
 	lines[1] = string.sub(lines[1], #self:prefix() + 1, #lines[1])
 	local last_line = lines[#lines]
 	lines[#lines] = string.sub(last_line, 1, #last_line - #self:suffix())
@@ -48,12 +52,12 @@ end
 
 ---@return string
 function Section:prefix()
-	return self.type[2] .. self.context.config.open_section_symbol
+	return (self.type[2] or "") .. (self.context.config.open_section_symbol or "")
 end
 
 ---@return string
 function Section:suffix()
-	return self.context.config.close_section_symbol .. self.type[2]
+	return (self.context.config.close_section_symbol or "") .. (self.type[2] or "")
 end
 
 return Section
