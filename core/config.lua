@@ -11,6 +11,9 @@ require("core.context")
 ---@field resolve_filename (fun(section: Section, context: Context): string?)|nil
 ---@field transform_lines (fun(section: Section, context: Context): string[])|nil
 ---@field resolve_reference (fun(section: Section, context: Context): string)|nil
+---@field retry_count number?
+---@field resolve_collision (fun(path: Path, filename: string, section: Section, context: Context, retry_count: number): Path?, string?)|nil
+---@field allow_overwrite boolean?
 ---@field allow_makedir boolean?
 
 ---@class Config
@@ -21,6 +24,9 @@ require("core.context")
 ---@field resolve_filename (fun(section: Section, context: Context): string?)|nil
 ---@field transform_lines (fun(section: Section, context: Context): string[])|nil
 ---@field resolve_reference (fun(section: Section, context: Context): string)|nil
+---@field retry_count number
+---@field resolve_collision fun(path: Path, filename: string, section: Section, context: Context, retry_count: number): Path?, string?
+---@field allow_overwrite boolean
 ---@field allow_makedir boolean
 Config = {}
 Config.__index = Config
@@ -47,6 +53,9 @@ function Config:new(config_table)
 	self.resolve_filename = config_table.resolve_filename
 	self.transform_lines = config_table.transform_lines
 	self.resolve_reference = config_table.resolve_reference
+	self.retry_count = config_table.retry_count
+	self.resolve_collision = config_table.resolve_collision
+	self.allow_overwrite = config_table.allow_overwrite
 	self.allow_makedir = config_table.allow_makedir
 	return self
 end

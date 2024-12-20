@@ -34,6 +34,10 @@ q> Some question<q
 r> Reference #3
 <r
 
+r> Reference #1
+This reference is annoyingly also named Reference #1
+<r
+
 >
 <
 o> This is something else 
@@ -71,7 +75,10 @@ local context = Context:new(
 
 utils.print(config)
 local root = fold.parse(context)
-print("\\/")
 fold.prepare(root, context)
+fold.execute(root, context)
 
-print(Path:new(arg[#arg]))
+print()
+print(vfs)
+-- print(utils.inspect(virt_filesystem_structure))
+

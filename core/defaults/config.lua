@@ -26,7 +26,7 @@ end
 
 config.allow_makedir = true
 
-config.transform_lines = function (section)
+config.transform_lines = function(section)
 	local lines = section:get_lines()
 	if section.parent.type[1] == "ROOT" then
 		return lines
@@ -47,6 +47,14 @@ end
 config.resolve_reference = function(section)
 	return "[[" .. section.filename .. "]]"
 end
+
+config.retry_count = 1
+
+config.resolve_collision = function(path, filename, _, _, retry_count)
+	return path, filename .. " (" .. retry_count .. ")"
+end
+
+config.allow_overwrite = false
 
 return {
 	config = config,

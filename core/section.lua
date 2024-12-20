@@ -43,7 +43,7 @@ function Section:get_lines()
 			table.insert(lines, self.context.lines[i])
 		end
 	end
-	-- print(self.start_line, self.end_line)
+	print(#lines)
 	lines[1] = string.sub(lines[1], #self:prefix() + 1, #lines[1])
 	local last_line = lines[#lines]
 	lines[#lines] = string.sub(last_line, 1, #last_line - #self:suffix())
@@ -58,6 +58,14 @@ end
 ---@return string
 function Section:suffix()
 	return (self.context.config.close_section_symbol or "") .. (self.type[2] or "")
+end
+
+---@return string?
+function Section:get_full_path()
+	if not self.path or not self.filename then
+		return nil
+	end
+	return tostring(self.path:copy():insert(self.filename))
 end
 
 return Section

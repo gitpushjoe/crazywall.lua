@@ -61,10 +61,34 @@ function Path:__newindex(idx, value)
 	end
 end
 
+---@param idx number
+---@param value string?
+---@return Path
+---@overload fun(self: Path, value: string): Path
+function Path:insert(idx, value)
+	if value == nil then
+		---@cast idx -number +string
+		value = idx
+		---@cast idx number
+		idx = #self.parts + 1
+	end
+	if type(idx) ~= type(1) then
+		error(tostring(idx) .. " is not a number")
+	end
+	if type(value) ~= type("") then
+		error(tostring(value) .. " is not a string")
+	end
+	if idx == #self.parts + 1 and self.parts[#self.parts] == "" then
+		table.remove(self.parts)
+		idx = idx - 1
+	end
+	table.insert(self.parts, idx, value)
+	return self
+end
+
 ---@return Path
 function Path:copy()
 	return Path:new(self)
 end
-
 
 return Path
