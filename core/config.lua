@@ -7,15 +7,19 @@ require("core.context")
 ---@field note_schema NoteSchema
 ---@field open_section_symbol string?
 ---@field close_section_symbol string?
----@field resolve_directory (fun(section: Section, src_path: Path, context: Context): Path)|nil
+---@field resolve_directory (fun(section: Section, context: Context): Path)|nil
 ---@field resolve_filename (fun(section: Section, context: Context): string?)|nil
+---@field transform_lines (fun(section: Section, context: Context): string[])|nil
+---@field allow_makedir boolean?
 
 ---@class Config
 ---@field note_schema NoteSchema
 ---@field open_section_symbol string
 ---@field close_section_symbol string
----@field resolve_directory fun(section: Section, src_path: Path, context: Context): Path|nil
+---@field resolve_directory fun(section: Section, context: Context): Path|nil
 ---@field resolve_filename (fun(section: Section, context: Context): string?)|nil
+---@field transform_lines (fun(section: Section, context: Context): string[])|nil
+---@field allow_makedir boolean
 Config = {}
 Config.__index = Config
 
@@ -39,6 +43,8 @@ function Config:new(config_table)
 	self.note_schema = config_table[s.NOTE_SCHEMA]
 	self.resolve_directory = config_table.resolve_directory
 	self.resolve_filename = config_table.resolve_filename
+	self.transform_lines = config_table.transform_lines
+	self.allow_makedir = config_table.allow_makedir
 	return self
 end
 

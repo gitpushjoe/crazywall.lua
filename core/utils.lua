@@ -9,10 +9,23 @@ M.str = {
 		return string.sub(str, -string.len(suffix)) == suffix
 	end,
 
-	split_lines = function(inp, include_empty)
+	split_lines = function(str, include_empty)
 		include_empty = include_empty or false
-		return include_empty and inp:gmatch("([^\n]*)\n?") or inp:gmatch("[^\r\n]+")
-	end
+		return include_empty and str:gmatch("([^\n]*)\n?") or str:gmatch("[^\r\n]+")
+	end,
+
+	join = function(list, delim)
+		delim = delim or ""
+		local result = ""
+		for i, str in ipairs(list) do
+			result = result .. (i == 1 and "" or delim) .. str
+		end
+		return result
+	end,
+
+	join_lines = function(list)
+		return M.str.join(list, "\n")
+	end,
 }
 
 M.inspect = require "core.inspect"

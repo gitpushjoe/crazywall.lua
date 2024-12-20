@@ -43,7 +43,7 @@ M.prepare = function(section_root, ctx)
 		if section.type[1] == "ROOT" then
 			return
 		end
-		section.path = ctx.config.resolve_directory(utils.read_only(section), ctx.src_path:copy(), utils.read_only(ctx))
+		section.path = ctx.config.resolve_directory(utils.read_only(section), utils.read_only(ctx))
 		print("set path to -> " .. tostring(section.path))
 	end)
 	traverse.preorder_traverse(section_root, function(section)
@@ -52,6 +52,13 @@ M.prepare = function(section_root, ctx)
 		end
 		section.filename = ctx.config.resolve_filename(utils.read_only(section), utils.read_only(ctx))
 		print("set filename to -> " .. section.filename)
+	end)
+	traverse.postorder_traverse(section_root, function(section)
+		if section.type[1] == "ROOT" then
+			return
+		end
+		section.lines = ctx.config.transform_lines(utils.read_only(section), utils.read_only(ctx))
+		print("set text to:\n(begin)\n" .. str.join_lines(section.lines) .. "\n(end)\n---")
 	end)
 end
 

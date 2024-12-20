@@ -16,4 +16,16 @@ M.preorder_traverse = function (section, callback)
 	end
 end
 
+---@param section Section
+---@param callback fun(section: Section): nil
+---@return nil
+M.postorder_traverse = function (section, callback)
+	if ipairs(section.children) then
+		for _, child in ipairs(section.children) do
+			M.preorder_traverse(child, callback)
+		end
+	end
+	callback(section)
+end
+
 return M

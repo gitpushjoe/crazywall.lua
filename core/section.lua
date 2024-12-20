@@ -11,6 +11,7 @@ require "core.context"
 ---@field parent Section?
 ---@field path Path?
 ---@field filename string?
+---@field lines string[]?
 Section = {}
 Section.__index = Section
 
