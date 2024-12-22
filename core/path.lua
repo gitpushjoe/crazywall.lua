@@ -44,24 +44,6 @@ function Path:pop()
 	return table.remove(self.parts)
 end
 
----@return string
-function Path:__index(idx)
-	if type(idx) == type(1) then
-		return self.parts[idx]
-	else
-		return rawget(Path, idx)
-	end
-end
-
----@param value string
-function Path:__newindex(idx, value)
-	if type(idx) == type(1) then
-		self.parts[idx] = value
-	else
-		rawset(self, idx, value)
-	end
-end
-
 ---@param idx number
 ---@param value string?
 ---@return Path
@@ -89,7 +71,7 @@ end
 
 ---@return Path
 function Path:copy()
-	return Path:new(self)
+	return Path:new(self.parts)
 end
 
 return Path

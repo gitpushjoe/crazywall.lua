@@ -1,31 +1,38 @@
-require "core.section"
-local utils = require "core.utils"
+require("core.section")
+local utils = require("core.utils")
 
 local M = {}
 
 ---@param section Section
----@param callback fun(section: Section): nil
----@return nil
-M.preorder_traverse = function (section, callback)
-	callback(section)
-	if not ipairs(section.children) then
-		return
+---@param callback fun(section: Section): nil, string?
+---@return nil, string?
+M.preorder = function(section, callback)
+	local _, err = callback(section)
+	if err then
+		return nil, err
 	end
 	for _, child in ipairs(section.children) do
-		M.preorder_traverse(child, callback)
+		_, err = M.preorder(child, callback)
+		if err then
+			return nil, err
+		end
 	end
 end
 
 ---@param section Section
----@param callback fun(section: Section): nil
----@return nil
-M.postorder_traverse = function (section, callback)
-	if section.children then
-		for _, child in ipairs(section.children) do
-			M.postorder_traverse(child, callback)
+---@param callback fun(section: Section): nil, string?
+---@return nil, string?
+M.postorder = function(section, callback)
+	for _, child in ipairs(section.children) do
+		local _, err = M.postorder(child, callback)
+		if err then
+			return nil, err
 		end
 	end
-	callback(section)
+	local _, err = callback(section)
+	if err then
+		return nil, err
+	end
 end
 
 return M

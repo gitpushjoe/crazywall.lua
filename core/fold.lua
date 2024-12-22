@@ -2,6 +2,8 @@ local utils = require("core.utils")
 local str = utils.str
 local Section = require("core.section")
 local traverse = require("core.traverse")
+local validate = require("core.validate")
+local errors = require("core.errors")
 
 local M = {}
 
@@ -11,6 +13,25 @@ M.error = {
 	---@return string
 	unterminated_section = function(section)
 		return "Unterminated section: " .. (tostring(section) or "nil")
+	end,
+
+	---@param section Section?
+	---@return string
+	maximum_retry_count = function(section)
+		return "Maximum retry count reached: " .. (tostring(section) or "nil")
+	end,
+
+	---@param path string
+	---@param section Section?
+	---@return string
+	cannot_write = function(path, section)
+		return "Cannot write to path " .. path .. "\n" .. tostring(section)
+	end,
+
+	---@param command string
+	---@return string
+	command_failed = function(command)
+		return "Failed to execute command: " .. command
 	end,
 }
 
@@ -65,48 +86,105 @@ end
 
 ---@param section_root Section
 ---@param ctx Context
+---@return nil, string?
 M.prepare = function(section_root, ctx)
-	traverse.preorder_traverse(section_root, function(section)
+	local _, err = traverse.preorder(section_root, function(section)
 		if section.type[1] == "ROOT" then
 			local path_copy = ctx.src_path:copy()
 			path_copy:pop()
 			section.path = path_copy
 			return
 		end
-		section.path = ctx.config.resolve_directory(
+
+		local path = ctx.config.resolve_directory(
 			utils.read_only(section),
 			utils.read_only(ctx)
 		)
+
+		local err = validate.are_instances({ { path, Path } })
+		if err then
+			return nil,
+				errors.invalid_instance_returned_from(
+					"config.resolve_directory"
+				)(err)
+		end
+
+		section.path = path
 		print("set path to -> " .. tostring(section.path))
 	end)
-	traverse.preorder_traverse(section_root, function(section)
+	if err then
+		return _, err
+	end
+
+	_, err = traverse.preorder(section_root, function(section)
 		if section.type[1] == "ROOT" then
 			section.filename = ctx.src_path:copy():pop()
 			return
 		end
-		section.filename = ctx.config.resolve_filename(
+
+		local filename = ctx.config.resolve_filename(
 			utils.read_only(section),
 			utils.read_only(ctx)
 		)
+
+		local _err = validate.types({ { filename, "string" } })
+		if _err then
+			return nil,
+				errors.invalid_type_returned_from("config.resolve_filename")(
+					_err
+				)
+		end
+
+		section.filename = filename
 		print("set filename to -> " .. section.filename)
 	end)
-	traverse.postorder_traverse(section_root, function(section)
+	if err then
+		return _, err
+	end
+
+	print("-----")
+	_, err = traverse.postorder(section_root, function(section)
 		if section.type[1] == "ROOT" then
 			section.lines = ctx.lines
 			return
 		end
-		section.lines = ctx.config.transform_lines(
+
+		local lines = ctx.config.transform_lines(
 			utils.read_only(section),
 			utils.read_only(ctx)
 		)
+
+		local _err = validate.types({ { lines, "table" } })
+		if _err then
+			return nil,
+				errors.invalid_type_returned_from("config.transform_lines")(
+					_err
+				)
+		end
+		---TODO(gitpushjoe): this pattern could probably be its own function
+		for i, value in ipairs(lines) do
+			_err = validate.types({ { value, "string" } })
+			if _err and value ~= false then
+				return nil,
+					errors.invalid_type_returned_from(
+						"config.transform_lines(...)[" .. i .. "]"
+					)(_err)
+			end
+		end
+
 		ctx.lines[section.start_line] =
 			ctx.config.resolve_reference(section, ctx)
 		for i = section.start_line + 1, section.end_line do
 			ctx.lines[i] = false
 		end
+
+		section.lines = lines
 		print("set text for " .. section.filename .. " to:")
 		print(str.join_lines(section.lines) .. "\n-----")
 	end)
+	if err then
+		return nil, err
+	end
 	print("lines: \n" .. str.join_lines(section_root:get_lines()))
 end
 
@@ -125,10 +203,10 @@ M.execute = function(section_root, ctx)
 		return true
 	end
 	local function get_write_handle(path_str)
-		print(path_str or "", "path_str")
 		return io.open(path_str or "", "w")
 	end
-	traverse.preorder_traverse(section_root, function(section)
+
+	local _, err = traverse.preorder(section_root, function(section)
 		local retry_count = 0
 		local write_handle
 		local full_path = section:get_full_path() or ""
@@ -164,7 +242,7 @@ M.execute = function(section_root, ctx)
 			full_path = section:get_full_path() or ""
 		end
 		if retry_count > ctx.config.retry_count then
-			error("Max retry count reached")
+			return nil, M.error.maximum_retry_count(section)
 		end
 		write_handle = write_handle or get_write_handle(full_path)
 		if write_handle then
@@ -173,11 +251,12 @@ M.execute = function(section_root, ctx)
 			return
 		end
 		if not ctx.config.allow_makedir then
-			error("Cannot write to file and not allowed to make directories")
+			return nil, M.error.cannot_write(full_path, section)
 		end
-		local process = io.popen("mkdir " .. tostring(section.path) .. "  2>&1")
+		local command = "mkdir " .. tostring(section.path) .. "  2>&1"
+		local process = io.popen(command)
 		if not process then
-			error("Unexpected error when making directory")
+			return nil, M.error.command_failed(command)
 		end
 		process:close()
 		write_handle = get_write_handle(full_path)
@@ -186,8 +265,11 @@ M.execute = function(section_root, ctx)
 			write_handle:close()
 			return
 		end
-		error("Could not write to the file after making directory")
+		M.error.cannot_write(full_path, section)
 	end)
+	if err then
+		return nil, err
+	end
 end
 
 return M

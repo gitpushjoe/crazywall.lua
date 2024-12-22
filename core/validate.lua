@@ -39,6 +39,9 @@ M.are_instances = function(data)
 		if not item[1] then
 			return item
 		end
+		if type(item[1]) ~= type({}) then
+			return item
+		end
 		if item[1].__index ~= item[2] then
 			return item
 		end

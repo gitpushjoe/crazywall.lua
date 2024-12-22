@@ -16,10 +16,12 @@ These are notes on some article.
 
 p> Article 2
 These are notes on another article.
+<p
 
 <r
 
 p> Chapter 2
+p> Article 1<p
 
 <p
 
@@ -70,8 +72,14 @@ root, err = fold.parse(context)
 if not root then
 	error(err)
 end
-fold.prepare(root, context)
-fold.execute(root, context)
+_, err = fold.prepare(root, context)
+if err then
+	error(err)
+end
+_, err = fold.execute(root, context)
+if err then
+	error(err)
+end
 
 print()
 print(vfs)

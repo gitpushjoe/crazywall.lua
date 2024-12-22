@@ -75,7 +75,6 @@ function Section:get_lines()
 			table.insert(lines, self.context.lines[i])
 		end
 	end
-	print(#lines)
 	lines[1] = string.sub(lines[1], #self:prefix() + 1, #lines[1])
 	local last_line = lines[#lines]
 	lines[#lines] = string.sub(last_line, 1, #last_line - #self:suffix())
@@ -115,20 +114,25 @@ function Section:__tostring()
 		.. ",\n\tchildren = {table of length "
 		.. #self.children
 		.. "}"
-		.. ",\n\tparent = {type = "
+		.. ",\n\tparent = {type = \""
 		.. (self.parent and self.parent.type and self.parent.type[1] or "nil")
-		.. ", start_line = "
+		.. "\", start_line = "
 		.. (self.parent and self.parent.start_line or "nil")
 		.. ", end_line = "
 		.. (self.parent and self.parent.end_line or "nil")
 		.. "}"
-		.. ",\n\tpath = "
+		.. ",\n\tpath = \""
 		.. (tostring(self.path) or "nil")
-		.. ",\n\tfilename = "
+		.. "\",\n\tfilename = \""
 		.. (self.filename or "nil")
-		.. ",\n\tlines = "
-		.. (self:get_lines() and '"' .. utils.str.join_lines(self:get_lines() or {}) .. '"' or "nil")
-		.. "\n}"
+		.. "\",\n\tlines = "
+		.. (self:get_lines() and '"' .. utils.str
+			.join_lines((self:get_lines() or {}))
+			:gsub("\\", "\\\\")
+			:gsub("\n", "\\n")
+			:gsub("\r", "\\r")
+			:gsub("\t", "\\t") or {} .. '"' or "nil")
+		.. "\"\n}"
 end
 
 return Section
