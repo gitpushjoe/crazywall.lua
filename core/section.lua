@@ -12,7 +12,6 @@ require("core.context")
 ---@field children Section[]
 ---@field parent Section?
 ---@field path Path?
----@field filename string?
 ---@field lines string[]?
 Section = {}
 Section.__index = Section
@@ -94,14 +93,6 @@ function Section:suffix()
 end
 
 ---@return string?
-function Section:get_full_path()
-	if not self.path or not self.filename then
-		return nil
-	end
-	return tostring(self.path:copy():insert(self.filename))
-end
-
----@return string?
 function Section:__tostring()
 	return "Section {"
 		.. '\n\ttype = "'
@@ -123,8 +114,6 @@ function Section:__tostring()
 		.. "}"
 		.. ",\n\tpath = \""
 		.. (tostring(self.path) or "nil")
-		.. "\",\n\tfilename = \""
-		.. (self.filename or "nil")
 		.. "\",\n\tlines = "
 		.. (self:get_lines() and '"' .. utils.str
 			.join_lines((self:get_lines() or {}))

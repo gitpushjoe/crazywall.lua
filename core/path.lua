@@ -4,7 +4,7 @@ Path = {}
 Path.__index = Path
 Path.__name = "Path"
 
----@param path string|string[]|Path
+---@param path string|string[]
 ---@return Path
 function Path:new(path)
 	self = {}
@@ -27,6 +27,50 @@ function Path:new(path)
 	return self
 end
 
+---@return boolean
+function Path:is_directory()
+	return self.parts[#self.parts] == ""
+end
+
+---@return nil
+function Path:to_directory()
+	self.parts[#self.parts] = ""
+end
+
+---@return string?
+function Path:pop_directory()
+	if #self.parts <= 2 then
+		return
+	end
+	return table.remove(self.parts, #self.parts - 1)
+end
+
+---@param part string
+---@return string?
+function Path:push_directory(part)
+	if #self.parts == 0 then
+		table.insert(self.parts, part)
+		return
+	end
+	table.insert(self.parts, #self.parts, part)
+end
+
+---@param filename string
+---@return string
+function Path:replace_filename(filename)
+	if #self.parts < 1 then
+		return ""
+	end
+	local old_filename = self.parts[#self.parts]
+	self.parts[#self.parts] = filename
+	return old_filename
+end
+
+---@return string
+function Path:get_filename()
+	return self.parts[#self.parts]
+end
+
 ---@return string
 function Path:__tostring()
 	local out = ""
@@ -34,39 +78,6 @@ function Path:__tostring()
 		out = out .. part .. (i ~= #self.parts and "/" or "")
 	end
 	return out
-end
-
----@return string?
-function Path:pop()
-	if #self.parts == 0 then
-		return
-	end
-	return table.remove(self.parts)
-end
-
----@param idx number
----@param value string?
----@return Path
----@overload fun(self: Path, value: string): Path
-function Path:insert(idx, value)
-	if value == nil then
-		---@cast idx -number +string
-		value = idx
-		---@cast idx number
-		idx = #self.parts + 1
-	end
-	if type(idx) ~= type(1) then
-		error(tostring(idx) .. " is not a number")
-	end
-	if type(value) ~= type("") then
-		error(tostring(value) .. " is not a string")
-	end
-	if idx == #self.parts + 1 and self.parts[#self.parts] == "" then
-		table.remove(self.parts)
-		idx = idx - 1
-	end
-	table.insert(self.parts, idx, value)
-	return self
 end
 
 ---@return Path

@@ -1,9 +1,8 @@
-require "core.path"
+require("core.path")
 
 ---@alias VirtualFile { [string]: VirtualFile|string }
 
-
-local VirtFS_IO = require "core.virtual_filesystem.io"
+local VirtFS_IO = require("core.virtual_filesystem.io")
 
 ---@class VirtualFilesystem
 ---@field structure VirtualFile
@@ -17,6 +16,7 @@ VirtualFilesystem.__name = "VirtualFilesystem"
 function VirtualFilesystem:new(structure)
 	self = {}
 	setmetatable(self, VirtualFilesystem)
+	---@cast self VirtualFilesystem
 	self.structure = structure
 	self.io = VirtFS_IO:new(self)
 	return self
@@ -26,18 +26,21 @@ end
 function VirtualFilesystem:__tostring()
 	local out = ""
 	---@param path Path
-	local function print_elem(path, elem)
+	local function print_elem(path, elem, filename)
 		if type(elem) == type({}) then
-			out = out ..tostring(path) .. ": (directory)\n"
+			path:push_directory(filename)
 			for name, child in pairs(elem) do
-				print_elem(path:copy():insert(name), child)
+				local p = path:copy()
+				print_elem(p, child, name)
 			end
+			out = out .. "(directory) " .. tostring(path) .. "\n"
 			return
 		end
+		path:replace_filename(filename)
 		out = out .. tostring(path) .. ": \n"
 		out = out .. elem .. "\n-----\n"
 	end
-	print_elem(Path:new("/"), self.structure)
+	print_elem(Path:new(""), self.structure, "")
 	return out
 end
 

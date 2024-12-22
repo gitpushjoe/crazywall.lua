@@ -8,12 +8,11 @@ require("core.context")
 ---@field note_schema NoteSchema
 ---@field open_section_symbol string?
 ---@field close_section_symbol string?
----@field resolve_directory (fun(section: Section, context: Context): Path)|nil
----@field resolve_filename (fun(section: Section, context: Context): string?)|nil
+---@field resolve_path (fun(section: Section, context: Context): Path)|nil
 ---@field transform_lines (fun(section: Section, context: Context): string[])|nil
 ---@field resolve_reference (fun(section: Section, context: Context): string)|nil
 ---@field retry_count number?
----@field resolve_collision (fun(path: Path, filename: string, section: Section, context: Context, retry_count: number): Path?, string?)|nil
+---@field resolve_collision (fun(path: Path, section: Section, context: Context, retry_count: number): Path?)|nil
 ---@field allow_overwrite boolean?
 ---@field allow_makedir boolean?
 
@@ -21,12 +20,11 @@ require("core.context")
 ---@field note_schema NoteSchema
 ---@field open_section_symbol string
 ---@field close_section_symbol string
----@field resolve_directory (fun(section: Section, context: Context): Path)|nil
----@field resolve_filename (fun(section: Section, context: Context): string?)|nil
----@field transform_lines (fun(section: Section, context: Context): string[])|nil
----@field resolve_reference (fun(section: Section, context: Context): string)|nil
+---@field resolve_path fun(section: Section, context: Context): Path
+---@field transform_lines fun(section: Section, context: Context): string[]
+---@field resolve_reference fun(section: Section, context: Context): string
 ---@field retry_count number
----@field resolve_collision fun(path: Path, filename: string, section: Section, context: Context, retry_count: number): Path?, string?
+---@field resolve_collision fun(path: Path, section: Section, context: Context, retry_count: number): Path?
 ---@field allow_overwrite boolean
 ---@field allow_makedir boolean
 Config = {}
@@ -48,8 +46,7 @@ function Config:new(config_table)
 			"close_section_symbol",
 		},
 		{ config_table.note_schema, "table", "note_schema" },
-		{ config_table.resolve_directory, "function", "resolve_directory" },
-		{ config_table.resolve_filename, "function", "resolve_filename" },
+		{ config_table.resolve_path, "function", "resolve_path" },
 		{ config_table.transform_lines, "function", "transform_lines" },
 		{ config_table.resolve_reference, "function", "resolve_reference" },
 		{ config_table.retry_count, "number", "retry_count" },
@@ -78,8 +75,7 @@ function Config:new(config_table)
 		end
 	end
 	self.note_schema = config_table.note_schema
-	self.resolve_directory = config_table.resolve_directory
-	self.resolve_filename = config_table.resolve_filename
+	self.resolve_path = config_table.resolve_path
 	self.transform_lines = config_table.transform_lines
 	self.resolve_reference = config_table.resolve_reference
 	self.retry_count = config_table.retry_count

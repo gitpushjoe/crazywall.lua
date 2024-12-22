@@ -91,12 +91,12 @@ M.prepare = function(section_root, ctx)
 	local _, err = traverse.preorder(section_root, function(section)
 		if section.type[1] == "ROOT" then
 			local path_copy = ctx.src_path:copy()
-			path_copy:pop()
+			path_copy:pop_directory()
 			section.path = path_copy
 			return
 		end
 
-		local path = ctx.config.resolve_directory(
+		local path = ctx.config.resolve_path(
 			utils.read_only(section),
 			utils.read_only(ctx)
 		)
@@ -111,32 +111,6 @@ M.prepare = function(section_root, ctx)
 
 		section.path = path
 		print("set path to -> " .. tostring(section.path))
-	end)
-	if err then
-		return _, err
-	end
-
-	_, err = traverse.preorder(section_root, function(section)
-		if section.type[1] == "ROOT" then
-			section.filename = ctx.src_path:copy():pop()
-			return
-		end
-
-		local filename = ctx.config.resolve_filename(
-			utils.read_only(section),
-			utils.read_only(ctx)
-		)
-
-		local _err = validate.types({ { filename, "string" } })
-		if _err then
-			return nil,
-				errors.invalid_type_returned_from("config.resolve_filename")(
-					_err
-				)
-		end
-
-		section.filename = filename
-		print("set filename to -> " .. section.filename)
 	end)
 	if err then
 		return _, err
@@ -179,8 +153,6 @@ M.prepare = function(section_root, ctx)
 		end
 
 		section.lines = lines
-		print("set text for " .. section.filename .. " to:")
-		print(str.join_lines(section.lines) .. "\n-----")
 	end)
 	if err then
 		return nil, err
@@ -209,7 +181,7 @@ M.execute = function(section_root, ctx)
 	local _, err = traverse.preorder(section_root, function(section)
 		local retry_count = 0
 		local write_handle
-		local full_path = section:get_full_path() or ""
+		local full_path = tostring(section.path) or ""
 		if section.type[1] == "ROOT" then
 			full_path = tostring(ctx.src_path)
 		end
@@ -230,16 +202,14 @@ M.execute = function(section_root, ctx)
 			if retry_count > ctx.config.retry_count then
 				break
 			end
-			local path, filename = ctx.config.resolve_collision(
+			local path = ctx.config.resolve_collision(
 				section.path,
-				section.filename,
 				section,
 				ctx,
 				retry_count
 			)
 			section.path = path
-			section.filename = filename
-			full_path = section:get_full_path() or ""
+			full_path = tostring(section.path) or ""
 		end
 		if retry_count > ctx.config.retry_count then
 			return nil, M.error.maximum_retry_count(section)

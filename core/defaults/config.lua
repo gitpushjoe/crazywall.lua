@@ -14,14 +14,12 @@ local config = {
 config.open_section_symbol = "> "
 config.close_section_symbol = "<"
 
-config.resolve_directory = function(_, conf)
-	local src_path = conf.src_path:copy()
-	src_path:pop()
+config.resolve_path = function(section, ctx)
+	local src_path = ctx.src_path:copy()
+	src_path:pop_directory()
+	src_path:push_directory(section.type[2])
+	src_path:replace_filename((section:get_lines() or {})[1] or "")
 	return src_path
-end
-
-config.resolve_filename = function(section)
-	return section:get_lines()[1]
 end
 
 config.allow_makedir = true
@@ -35,8 +33,8 @@ config.transform_lines = function(section)
 	local from_text = "From:"
 	local curr = section.parent
 	while curr ~= nil do
-		if curr.filename then
-			from_text = from_text .. " [[" .. curr.filename .. "]]"
+		if curr.path:get_filename() then
+			from_text = from_text .. " [[" .. curr.path:get_filename() .. "]]"
 		end
 		curr = curr.parent
 	end
@@ -45,13 +43,14 @@ config.transform_lines = function(section)
 end
 
 config.resolve_reference = function(section)
-	return "[[" .. section.filename .. "]]"
+	return "[[" .. section.path:get_filename() .. "]]"
 end
 
 config.retry_count = 1
 
-config.resolve_collision = function(path, filename, _, _, retry_count)
-	return path, filename .. " (" .. retry_count .. ")"
+config.resolve_collision = function(path, _, _, retry_count)
+	path:replace_filename(path:get_filename() .. " (" .. retry_count .. ")")
+	return path
 end
 
 config.allow_overwrite = false
