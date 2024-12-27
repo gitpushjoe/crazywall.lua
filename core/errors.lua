@@ -1,6 +1,6 @@
 local M = {}
 
----TODO(gitpushjoe): Give better/more accurate error messages when encountering nil
+-- TODO(gitpushjoe): Give better/more accurate error messages when encountering nil
 
 ---@param function_name string
 M.invalid_type = function(function_name)
@@ -103,7 +103,7 @@ M.invalid_instance_returned_from = function(function_name)
 				actual = "(actual = " .. tostring(actual) .. ")"
 			end
 		end
-		---TODO(gitpushjoe): add the quotations to actual above instead
+		-- TODO(gitpushjoe): add the quotations to actual above instead
 		return "Invalid base class returned from `"
 			.. function_name
 			.. "`."

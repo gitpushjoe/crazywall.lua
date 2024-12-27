@@ -29,9 +29,10 @@ M.error = {
 	end,
 
 	---@param command string
+	---@param err string?
 	---@return string
-	command_failed = function(command)
-		return "Failed to execute command: " .. command
+	command_failed = function(command, err)
+		return "Failed to execute command: " .. command .. "\nError: " .. (err or "")
 	end,
 }
 
@@ -68,7 +69,7 @@ M.parse = function(ctx)
 				break
 			end
 		end
-		---TODO(gitpushjoe): maybe still check if a suffix for another note type slipped through?
+		-- TODO(gitpushjoe): maybe still check if a suffix for another note type slipped through?
 		if
 			section
 			and section.type[1] ~= "ROOT"
@@ -135,7 +136,7 @@ M.prepare = function(section_root, ctx)
 					_err
 				)
 		end
-		---TODO(gitpushjoe): this pattern could probably be its own function
+		-- TODO(gitpushjoe): this pattern could probably be its own function
 		for i, value in ipairs(lines) do
 			_err = validate.types({ { value, "string" } })
 			if _err and value ~= false then
@@ -157,7 +158,7 @@ M.prepare = function(section_root, ctx)
 	if err then
 		return nil, err
 	end
-	print("lines: \n" .. str.join_lines(section_root:get_lines()))
+	-- print("lines: \n" .. str.join_lines(section_root:get_lines()))
 end
 
 ---@param section_root Section
@@ -223,12 +224,18 @@ M.execute = function(section_root, ctx)
 		if not ctx.config.allow_makedir then
 			return nil, M.error.cannot_write(full_path, section)
 		end
-		local command = "mkdir " .. tostring(section.path) .. "  2>&1"
-		local process = io.popen(command)
-		if not process then
+		local command = "mkdir -p "
+			.. tostring(section.path:directory():escaped())
+			.. " 2>&1"
+		local handle, err = io.popen(command)
+		if not handle then
+			return nil, M.error.command_failed(command, err)
+		end
+		-- local output = handle:read("*a")
+		local succeeded = handle:close()
+		if succeeded ~= true then
 			return nil, M.error.command_failed(command)
 		end
-		process:close()
 		write_handle = get_write_handle(full_path)
 		if write_handle then
 			write_handle:write(str.join_lines(section.lines))

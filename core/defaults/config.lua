@@ -15,11 +15,14 @@ config.open_section_symbol = "> "
 config.close_section_symbol = "<"
 
 config.resolve_path = function(section, ctx)
-	local src_path = ctx.src_path:copy()
-	src_path:pop_directory()
-	src_path:push_directory(section.type[2])
-	src_path:replace_filename((section:get_lines() or {})[1] or "")
-	return src_path
+	-- local src_path = ctx.src_path:copy()
+	-- src_path:pop_directory()
+	-- src_path:push_directory(section.type[2])
+	-- src_path:replace_filename((section:get_lines() or {})[1] or "")
+	local path = Path:new("/home/user/.crazywall/notes/")
+	path:push_directory(section.type[1])
+	path:replace_filename((section:get_lines() or {})[1] or "")
+	return path
 end
 
 config.allow_makedir = true

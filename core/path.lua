@@ -32,9 +32,10 @@ function Path:is_directory()
 	return self.parts[#self.parts] == ""
 end
 
----@return nil
+---@return Path
 function Path:to_directory()
 	self.parts[#self.parts] = ""
+	return self
 end
 
 ---@return string?
@@ -80,9 +81,20 @@ function Path:__tostring()
 	return out
 end
 
+---@return string
+function Path:escaped()
+	return "'" .. tostring(self):gsub("'", "'\\''") .. "'"
+end
+
 ---@return Path
 function Path:copy()
 	return Path:new(self.parts)
+end
+
+---@reutrn Path
+function Path:directory()
+	local copy = self:copy()
+	return copy:to_directory()
 end
 
 return Path

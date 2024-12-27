@@ -20,6 +20,7 @@ end
 
 function M:close()
 	self.opened = false
+	return true, "exit", 0
 end
 
 return M

@@ -25,6 +25,7 @@ p> Article 1<p
 
 <p
 
+q> A question <q
 
 >
 <
@@ -38,7 +39,6 @@ if not config then
 end
 
 local virt_filesystem_structure = {
-	root = {
 		home = {
 			user = {
 				p = {
@@ -49,10 +49,9 @@ local virt_filesystem_structure = {
 				["some_file.txt"] = "foo",
 			},
 		},
-	},
 }
 
----TODO(gitpushjoe): add error checking to virtual filesystem
+-- TODO(gitpushjoe): add error checking to virtual filesystem
 local vfs = VirtualFilesystem:new(virt_filesystem_structure)
 
 -- example_file = utils.str.split_lines_to_list(example_file)
@@ -60,7 +59,7 @@ local vfs = VirtualFilesystem:new(virt_filesystem_structure)
 
 local context
 context, err =
-	Context:new(config, "/root/home/user/p/main.txt", example_file, vfs)
+	Context:new(config, "/home/user/p/main.txt", example_file, vfs)
 
 if not context then
 	error(err)
