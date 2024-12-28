@@ -75,6 +75,9 @@ M.print = function (tbl, indent_level)
 	io.write('\n')
 end
 
+---@generic T
+---@param tbl T
+---@return T
 M.read_only = function (tbl)
 	local proxy = {}
 	local mt = {

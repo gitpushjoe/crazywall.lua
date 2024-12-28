@@ -15,12 +15,13 @@ config.open_section_symbol = "> "
 config.close_section_symbol = "<"
 
 config.resolve_path = function(section)
-	local path, err = Path:new("/home/user/.crazywall/notes/test")
+	local path, err = Path:new("/home/user/")
 	if not path then
 		error(err)
 	end
 	path:push_directory(section.type[2])
-	path:replace_filename(section:get_lines()[1])
+	path:replace_filename(section:get_lines()[1] .. ".txt")
+	print(tostring(path:escaped()))
 	return path
 end
 
@@ -48,14 +49,14 @@ config.resolve_reference = function(section)
 	return "[[" .. section.path:get_filename() .. "]]"
 end
 
-config.retry_count = 1
+config.retry_count = 2
 
 config.resolve_collision = function(path, _, _, retry_count)
 	path:replace_filename(path:get_filename() .. " (" .. retry_count .. ")")
 	return path
 end
 
-config.allow_overwrite = false
+config.allow_overwrite = true
 
 return {
 	config = config,

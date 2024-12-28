@@ -25,7 +25,9 @@ p> Article 1<p
 
 <p
 
-q> A question <q
+q> A question<q
+q> A question
+(This is another question) <q
 
 >
 <
@@ -43,6 +45,7 @@ local mock_filesystem_table = {
 		user = {
 			p = {
 				["main.txt"] = example_file,
+				["Article 1.txt"] = "bar",
 			},
 			r = {},
 			f = {},
@@ -74,10 +77,15 @@ _, err = fold.prepare(root, context)
 if err then
 	error(err)
 end
-_, err = fold.execute(root, context)
+
+local plan
+plan, err = fold.execute(root, context, true)
 if err then
 	error(err)
 end
 
 print()
-print(mock_fs)
+print(plan)
+
+print()
+-- print(mock_fs)
