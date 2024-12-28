@@ -5,9 +5,11 @@ local utils = require"core.utils"
 local config = {
 	["note_schema"] = {
 		{ "permanent", "p {", "} p" },
+		{ "article", "a {", "} a" },
 		{ "reference", "r {", "} r" },
 		{ "literature", "l {", "} l" },
 		{ "question", "q {", "} q" },
+		{ "note", "n {", "} n" },
 		{ "idea", "i {", "} i" },
 	},
 }
@@ -17,7 +19,7 @@ config.resolve_path = function(section)
 	path:push_directory(section.type[1])
 	local title = section:get_lines()[1]
 	title = utils.str.trim(title)
-	path:set_filename(title .. ".txt")
+	path:set_filename("(" .. section.id .. ") " .. title .. ".txt")
 	print(tostring(path:escaped()))
 	return path
 end

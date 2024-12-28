@@ -1,3 +1,39 @@
+local example_file = [[# My Notes
+
+r { Chapter 1
+Notes:
+
+	a { Article 1
+	These are notes on some article.
+		n { Note 1 } n
+		n { Note 2 } n
+		n { Note 3 } n
+	Above are three notes.
+	} a
+	a { Article 2
+	These are notes on another article.
+	} a
+
+} r
+
+r { Chapter 2
+
+	a { Article 1 
+	This is another note titled "Article 1".
+	} a
+	q { A question } q
+
+} r
+
+q { A question
+(This is another question)
+} q
+
+o { This is something else 
+} o
+]]
+
+
 local script_dir = debug.getinfo(1, "S").source:match("@(.*)/?")
 package.path = package.path .. ";" .. script_dir .. "/?.lua"
 
@@ -6,33 +42,6 @@ local default_config = require("core.defaults.config")
 local fold = require("core.fold")
 local MockFilesystem = require("core.mock_filesystem.mock_filesystem")
 
-local example_file = [[# My Notes
-
-r { Chapter 1
-
-p { Article 1
-These are notes on some article.
-} p
-
-p { Article 2
-These are notes on another article.
-} p
-
-} r
-
-r { Chapter 2
-
-p { Article 1 } p
-q { A question } q
-
-} r
-
-q { A question
-(This is another question) } q
-
-o { This is something else 
-} o
-]]
 
 local config, err = Config:new(default_config.config)
 if not config then

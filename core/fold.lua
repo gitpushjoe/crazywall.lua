@@ -8,12 +8,18 @@ local Action = require("core.plan.action")
 
 local M = {}
 
-M.error = {
+M.errors = {
 
 	---@param section Section?
 	---@return string
 	unterminated_section = function(section)
 		return "Unterminated section: " .. (tostring(section) or "nil")
+	end,
+
+	---@param line number
+	---@return string
+	inconsistent_indent = function(line)
+		return "Inconsistent indent on line " .. line
 	end,
 
 	---@param section Section?
@@ -44,7 +50,8 @@ M.error = {
 ---@return Section?, string?
 M.parse = function(ctx)
 	local section, err =
-		Section:new(utils.read_only({ "ROOT" }), ctx, 0, #ctx.lines, {}, nil)
+		Section:new(0, utils.read_only({ "ROOT" }), ctx, 0, #ctx.lines, {}, nil)
+	local id = 1
 	local root = section
 	if not section then
 		return nil, err
@@ -52,18 +59,41 @@ M.parse = function(ctx)
 	local config = ctx.config
 	local note_schema = config.note_schema
 	for i, line in ipairs(ctx.lines) do
+		---@cast line string
+		if section ~= nil and #section.indent > 0 then
+			local indent = section.indent
+			-- TODO(gitpushjoe): maybe ignoring empty lines should be config option?
+			if #line ~= 0 and not str.starts_with(line, indent) then
+				return nil, M.errors.inconsistent_indent(i)
+			end
+		end
+
+		local indent_chars = 0
+		for j = 1, #line do
+			local char = string.sub(line, j, j)
+			if char ~= " " and char ~= "\t" then
+				break
+			end
+			indent_chars = indent_chars + 1
+		end
+		local indent = string.sub(line, 1, indent_chars)
+		line = string.sub(line, indent_chars + 1)
+
 		for note_idx, note_type in ipairs(note_schema) do
 			local prefix = note_type[2]
 			if str.starts_with(line, prefix) then
 				local curr
 				curr, err = Section:new(
+					id,
 					utils.read_only(config.note_schema[note_idx]),
 					ctx,
 					i,
 					nil,
 					{},
-					section
+					section,
+					indent
 				)
+				id = id + 1
 				if not curr then
 					return nil, err
 				end
@@ -83,7 +113,7 @@ M.parse = function(ctx)
 		end
 	end
 	if section ~= root then
-		return nil, M.error.unterminated_section(section)
+		return nil, M.errors.unterminated_section(section)
 	end
 	return section
 end
@@ -137,8 +167,11 @@ M.prepare = function(section_root, ctx)
 			return nil, _err
 		end
 
-		ctx.lines[section.start_line] =
-			ctx.config.resolve_reference(section, ctx)
+		local reference = ctx.config.resolve_reference(section, ctx)
+		ctx.lines[section.start_line] = string.sub(
+			section.indent,
+			section.parent and #section.parent.indent or 0
+		) .. reference
 		for i = section.start_line + 1, section.end_line do
 			ctx.lines[i] = false
 		end
@@ -202,13 +235,13 @@ M.execute = function(section_root, ctx, is_dry_run)
 				.. " 2>&1"
 			local handle, err = io.popen(command)
 			if not handle then
-				return M.error.command_failed(command, err)
+				return M.errors.command_failed(command, err)
 			end
 
 			local succeeded
 			succeeded, err = handle:close()
 			if succeeded ~= true then
-				return M.error.command_failed(command, err)
+				return M.errors.command_failed(command, err)
 			end
 		end
 		plan:add(Action.mkdir(directory))
@@ -253,7 +286,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 		end
 
 		if retry_count > ctx.config.retry_count then
-			return nil, M.error.maximum_retry_count(section)
+			return nil, M.errors.maximum_retry_count(section)
 		end
 		write_handle = write_handle or get_write_handle(full_path)
 
@@ -263,7 +296,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 		end
 
 		if not ctx.config.allow_makedir then
-			return nil, M.error.cannot_write(full_path, section)
+			return nil, M.errors.cannot_write(full_path, section)
 		end
 
 		local err = mkdir(section.path:directory())
@@ -274,7 +307,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 		write_handle = get_write_handle(full_path)
 		write(write_handle, section.lines, section.path, is_overwrite)
 
-		M.error.cannot_write(full_path, section)
+		M.errors.cannot_write(full_path, section)
 	end)
 	if err then
 		return nil, err

@@ -39,7 +39,7 @@ function MockFilesystem:__tostring()
 			return
 		end
 		path:set_filename(filename)
-		out = out .. tostring(path) .. ": \n"
+		out = out .. "(file)      " .. tostring(path) .. ": \n"
 		out = out .. elem .. "\n-----\n"
 	end
 	print_elem(assert(Path:new("")), self.table, "")

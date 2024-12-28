@@ -4,6 +4,7 @@ require("core.path")
 require("core.context")
 
 ---@class Section
+---@field id number
 ---@field type [string, string]
 ---@field context Context
 ---@field start_line number
@@ -12,23 +13,28 @@ require("core.context")
 ---@field parent Section?
 ---@field path Path?
 ---@field lines string[]?
+---@field indent string
 Section = {}
 Section.__index = Section
 Section.__name = "Section"
 
+---@param id number
 ---@param type [string, string]
 ---@param context Context
 ---@param start_line number
 ---@param end_line number?
 ---@param children Section[]
 ---@param parent Section?
+---@param indent string?
 ---@return Section?, string?
-function Section:new(type, context, start_line, end_line, children, parent)
+function Section:new(id, type, context, start_line, end_line, children, parent, indent)
 	self = {}
 	setmetatable(self, Section)
 	---@cast self Section
 
 	local err = validate.types("Section:new", {
+		{ type, "table", "type" },
+		{ id, "number", "id" },
 		{ start_line, "number", "start_line" },
 		{ end_line, "number?", "end_line" },
 		{ children, "table?", "children" },
@@ -46,12 +52,14 @@ function Section:new(type, context, start_line, end_line, children, parent)
 		return nil, err
 	end
 
+	self.id = id
 	self.type = type
 	self.context = utils.read_only(context)
 	self.start_line = start_line
 	self.end_line = end_line
 	self.children = children
 	self.parent = parent
+	self.indent = indent or ""
 	return self
 end
 
@@ -67,7 +75,8 @@ function Section:get_lines()
 	for i = self.start_line, self.end_line do
 		local line = self.context.lines[i]
 		if line ~= nil and line ~= false then
-			table.insert(lines, self.context.lines[i])
+			---@cast line string
+			table.insert(lines, line:sub(#self.indent + 1))
 		end
 	end
 	lines[1] = string.sub(lines[1], #self:prefix() + 1, #lines[1])
