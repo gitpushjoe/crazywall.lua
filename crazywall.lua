@@ -8,31 +8,30 @@ local MockFilesystem = require("core.mock_filesystem.mock_filesystem")
 
 local example_file = [[# My Notes
 
-r> Chapter 1
+r { Chapter 1
 
-p> Article 1
+p { Article 1
 These are notes on some article.
-<p
+} p
 
-p> Article 2
+p { Article 2
 These are notes on another article.
-<p
+} p
 
-<r
+} r
 
-p> Chapter 2
-p> Article 1<p
+r { Chapter 2
 
-<p
+p { Article 1 } p
+q { A question } q
 
-q> A question<q
-q> A question
-(This is another question) <q
+} r
 
->
-<
-o> This is something else 
-<o
+q { A question
+(This is another question) } q
+
+o { This is something else 
+} o
 ]]
 
 local config, err = Config:new(default_config.config)
@@ -61,25 +60,26 @@ local mock_fs = MockFilesystem:new(mock_filesystem_table)
 -- table.insert(example_file, false)
 
 local context
-context, err = Context:new(config, "/home/user/p/main.txt", example_file, mock_fs)
+context, err =
+	Context:new(config, "/home/user/p/main.txt", example_file, mock_fs)
 
 if not context then
 	error(err)
 end
 
-utils.print(config)
 local root
 root, err = fold.parse(context)
 if not root then
 	error(err)
 end
+
 _, err = fold.prepare(root, context)
 if err then
 	error(err)
 end
 
 local plan
-plan, err = fold.execute(root, context, true)
+plan, err = fold.execute(root, context, false)
 if err then
 	error(err)
 end
@@ -88,4 +88,4 @@ print()
 print(plan)
 
 print()
--- print(mock_fs)
+print(mock_fs)

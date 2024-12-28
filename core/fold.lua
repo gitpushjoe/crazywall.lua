@@ -50,11 +50,10 @@ M.parse = function(ctx)
 		return nil, err
 	end
 	local config = ctx.config
-	local open_section_symbol = config.open_section_symbol
 	local note_schema = config.note_schema
 	for i, line in ipairs(ctx.lines) do
 		for note_idx, note_type in ipairs(note_schema) do
-			local prefix = note_type[2] .. open_section_symbol
+			local prefix = note_type[2]
 			if str.starts_with(line, prefix) then
 				local curr
 				curr, err = Section:new(

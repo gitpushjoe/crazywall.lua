@@ -72,7 +72,7 @@ end
 
 ---@param filename string
 ---@return string
-function Path:replace_filename(filename)
+function Path:set_filename(filename)
 	if #self.parts < 1 then
 		return ""
 	end

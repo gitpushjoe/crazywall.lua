@@ -1,12 +1,11 @@
 local validate = require("core.validate")
+local utils = require("core.utils")
 require("core.context")
 
 ---@alias NoteSchema [string, string][]
 
 ---@class (exact) ConfigTable
 ---@field note_schema NoteSchema
----@field open_section_symbol string?
----@field close_section_symbol string?
 ---@field resolve_path (fun(section: Section, context: Context): Path)|nil
 ---@field transform_lines (fun(section: Section, context: Context): string[])|nil
 ---@field resolve_reference (fun(section: Section, context: Context): string)|nil
@@ -17,8 +16,6 @@ require("core.context")
 
 ---@class Config
 ---@field note_schema NoteSchema
----@field open_section_symbol string
----@field close_section_symbol string
 ---@field resolve_path fun(section: Section, context: Context): Path
 ---@field transform_lines fun(section: Section, context: Context): string[]
 ---@field resolve_reference fun(section: Section, context: Context): string
@@ -30,6 +27,19 @@ Config = {}
 Config.__index = Config
 Config.__name = "Config"
 
+Config.errors = utils.read_only({
+
+	---@param list table
+	---@return string
+	missing_item_in_note_schema_list = function(list, idx)
+		return "Missing "
+			.. (#list <= 1 and "open-tag" or "close-tag")
+			.. "in config.note_schema["
+			.. idx
+			.. "]."
+	end,
+})
+
 ---@param config_table ConfigTable
 ---@return Config?, string?
 function Config:new(config_table)
@@ -37,12 +47,6 @@ function Config:new(config_table)
 	---@cast self Config
 	setmetatable(self, Config)
 	local err = validate.types("Config:new", {
-		{ config_table.open_section_symbol, "string", "open_section_symbol" },
-		{
-			config_table.close_section_symbol,
-			"string",
-			"close_section_symbol",
-		},
 		{ config_table.note_schema, "table", "note_schema" },
 		{ config_table.resolve_path, "function", "resolve_path" },
 		{ config_table.transform_lines, "function", "transform_lines" },
@@ -55,21 +59,19 @@ function Config:new(config_table)
 	if err then
 		return nil, err
 	end
-	self.open_section_symbol = config_table.open_section_symbol or "> "
-	self.close_section_symbol = config_table.close_section_symbol or "<"
 	for i, note_type in ipairs(config_table.note_schema) do
 		local curr_string = "config_table.note_schema[" .. i .. "]"
 		err = validate.types("Config:new", {
-			{ note_type, "table", curr_string },
 			{ note_type[1], "string", curr_string .. "[1]" },
-			{ note_type[2], "string?", curr_string .. "[2]" },
+			{ note_type[2], "string", curr_string .. "[2]" },
+			{ note_type[3], "string", curr_string .. "[3]" },
 		})
 		if err then
 			return nil, err
 		end
-		if #note_type < 2 then
-			local prefix = note_type[1]:sub(1, 1)
-			table.insert(note_type, prefix)
+		if #note_type < 3 then
+			return nil,
+				Config.errors.missing_item_in_note_schema_list(note_type, i)
 		end
 	end
 	self.note_schema = config_table.note_schema

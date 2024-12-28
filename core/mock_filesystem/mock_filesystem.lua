@@ -38,7 +38,7 @@ function MockFilesystem:__tostring()
 			out = out .. "(directory) " .. tostring(path) .. "\n"
 			return
 		end
-		path:replace_filename(filename)
+		path:set_filename(filename)
 		out = out .. tostring(path) .. ": \n"
 		out = out .. elem .. "\n-----\n"
 	end

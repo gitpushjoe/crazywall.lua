@@ -1,26 +1,23 @@
 require("core.config")
+local utils = require"core.utils"
 
 ---@type ConfigTable
 local config = {
 	["note_schema"] = {
-		{ "permanent" },
-		{ "reference" },
-		{ "literature" },
-		{ "question" },
-		{ "idea" },
+		{ "permanent", "p {", "} p" },
+		{ "reference", "r {", "} r" },
+		{ "literature", "l {", "} l" },
+		{ "question", "q {", "} q" },
+		{ "idea", "i {", "} i" },
 	},
 }
 
-config.open_section_symbol = "> "
-config.close_section_symbol = "<"
-
 config.resolve_path = function(section)
-	local path, err = Path:new("/home/user/")
-	if not path then
-		error(err)
-	end
-	path:push_directory(section.type[2])
-	path:replace_filename(section:get_lines()[1] .. ".txt")
+	local path = assert(Path:new("/home/user/"))
+	path:push_directory(section.type[1])
+	local title = section:get_lines()[1]
+	title = utils.str.trim(title)
+	path:set_filename(title .. ".txt")
 	print(tostring(path:escaped()))
 	return path
 end
@@ -29,6 +26,7 @@ config.allow_makedir = true
 
 config.transform_lines = function(section)
 	local lines = section:get_lines()
+	lines[1] = utils.str.trim(lines[1])
 	if section.parent.type[1] == "ROOT" then
 		return lines
 	end
@@ -51,12 +49,13 @@ end
 
 config.retry_count = 2
 
+-- TODO(gitpushjoe): rework resolve_collision
 config.resolve_collision = function(path, _, _, retry_count)
-	path:replace_filename(path:get_filename() .. " (" .. retry_count .. ")")
+	path:set_filename(path:get_filename() .. " (" .. retry_count .. ")")
 	return path
 end
 
-config.allow_overwrite = true
+config.allow_overwrite = false
 
 return {
 	config = config,

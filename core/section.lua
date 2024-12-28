@@ -78,14 +78,12 @@ end
 
 ---@return string
 function Section:prefix()
-	return (self.type[2] or "")
-		.. (self.context.config.open_section_symbol or "")
+	return self.type[2] or ""
 end
 
 ---@return string
 function Section:suffix()
-	return (self.context.config.close_section_symbol or "")
-		.. (self.type[2] or "")
+	return self.type[3] or ""
 end
 
 ---@return string?
