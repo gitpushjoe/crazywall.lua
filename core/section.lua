@@ -1,6 +1,5 @@
 local utils = require("core.utils")
 local validate = require("core.validate")
-local errors = require("core.errors")
 require("core.path")
 require("core.context")
 
@@ -29,25 +28,22 @@ function Section:new(type, context, start_line, end_line, children, parent)
 	setmetatable(self, Section)
 	---@cast self Section
 
-	local invalid_type = errors.invalid_type("Section:new")
-	local invalid_instance = errors.invalid_instance("Section:new")
-
-	local err = validate.types({
+	local err = validate.types("Section:new", {
 		{ start_line, "number", "start_line" },
 		{ end_line, "number?", "end_line" },
 		{ children, "table?", "children" },
 	})
 	if err then
-		return nil, invalid_type(err)
+		return nil, err
 	end
 
 	---@type unknown
-	err = validate.are_instances({
+	err = validate.are_instances("Section:new", {
 		{ context, Context, "context" },
 		parent and { parent, Section, "parent" },
 	})
 	if err then
-		return nil, invalid_instance(err)
+		return nil, err
 	end
 
 	self.type = type
@@ -70,7 +66,7 @@ function Section:get_lines()
 	end
 	for i = self.start_line, self.end_line do
 		local line = self.context.lines[i]
-		if line ~= nil then
+		if line ~= nil and line ~= false then
 			table.insert(lines, self.context.lines[i])
 		end
 	end
@@ -105,23 +101,23 @@ function Section:__tostring()
 		.. ",\n\tchildren = {table of length "
 		.. #self.children
 		.. "}"
-		.. ",\n\tparent = {type = \""
+		.. ',\n\tparent = {type = "'
 		.. (self.parent and self.parent.type and self.parent.type[1] or "nil")
-		.. "\", start_line = "
+		.. '", start_line = '
 		.. (self.parent and self.parent.start_line or "nil")
 		.. ", end_line = "
 		.. (self.parent and self.parent.end_line or "nil")
 		.. "}"
-		.. ",\n\tpath = \""
+		.. ',\n\tpath = "'
 		.. (tostring(self.path) or "nil")
-		.. "\",\n\tlines = "
+		.. '",\n\tlines = '
 		.. (self:get_lines() and '"' .. utils.str
 			.join_lines((self:get_lines() or {}))
 			:gsub("\\", "\\\\")
 			:gsub("\n", "\\n")
 			:gsub("\r", "\\r")
 			:gsub("\t", "\\t") or {} .. '"' or "nil")
-		.. "\"\n}"
+		.. '"\n}'
 end
 
 return Section

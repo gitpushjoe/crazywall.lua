@@ -14,14 +14,13 @@ local config = {
 config.open_section_symbol = "> "
 config.close_section_symbol = "<"
 
-config.resolve_path = function(section, ctx)
-	-- local src_path = ctx.src_path:copy()
-	-- src_path:pop_directory()
-	-- src_path:push_directory(section.type[2])
-	-- src_path:replace_filename((section:get_lines() or {})[1] or "")
-	local path = Path:new("/home/user/.crazywall/notes/")
-	path:push_directory(section.type[1])
-	path:replace_filename((section:get_lines() or {})[1] or "")
+config.resolve_path = function(section)
+	local path, err = Path:new("/home/user/.crazywall/notes/test")
+	if not path then
+		error(err)
+	end
+	path:push_directory(section.type[2])
+	path:replace_filename(section:get_lines()[1])
 	return path
 end
 
@@ -35,7 +34,7 @@ config.transform_lines = function(section)
 	table.insert(lines, "")
 	local from_text = "From:"
 	local curr = section.parent
-	while curr ~= nil do
+	while curr ~= nil and curr.type[1] ~= "ROOT" do
 		if curr.path:get_filename() then
 			from_text = from_text .. " [[" .. curr.path:get_filename() .. "]]"
 		end

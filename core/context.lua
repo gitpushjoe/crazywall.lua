@@ -1,4 +1,3 @@
-local errors = require("core.errors")
 local utils = require("core.utils")
 local Path = require("core.path")
 local validate = require("core.validate")
@@ -25,18 +24,16 @@ Context.__name = "Context"
 function Context:new(config, path, inp, virt_filesystem)
 	self = {}
 	---@cast self Context
-	local invalid_type = errors.invalid_type("Context:new")
-	local invalid_instance = errors.invalid_instance("Context:new")
 	setmetatable(self, Context)
 
-	local err = validate.are_instances({
+	local err = validate.are_instances("Context:new", {
 		{ config, Config, "config" },
 		virt_filesystem
 				and { virt_filesystem, VirtualFilesystem, "virt_filesystem" }
 			or nil,
 	})
 	if err then
-		return nil, invalid_instance(err)
+		return nil, err
 	end
 
 	self.config = config or {}
@@ -44,12 +41,12 @@ function Context:new(config, path, inp, virt_filesystem)
 	self.virt_filesystem = virt_filesystem
 
 	---@type unknown
-	err = validate.types({
+	err = validate.types("Context:new", {
 		{ path, "string", "path" },
 		{ inp, "table|string", "inp" },
 	})
 	if err then
-		return nil, invalid_type(err)
+		return nil, err
 	end
 
 	self.path = path
@@ -66,13 +63,12 @@ function Context:new(config, path, inp, virt_filesystem)
 	else
 		---@cast inp string[]
 		for i, line in ipairs(inp) do
-
 			---@type unknown
-			err = validate.types({
+			err = validate.types("Context:new", {
 				{ line, "string", "inp[" .. i .. "]" },
 			})
 			if err then
-				return nil, invalid_type(err)
+				return nil, err
 			end
 
 			table.insert(lines, tostring(line))

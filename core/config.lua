@@ -1,5 +1,4 @@
 local validate = require("core.validate")
-local errors = require("core.errors")
 require("core.context")
 
 ---@alias NoteSchema [string, string][]
@@ -37,8 +36,7 @@ function Config:new(config_table)
 	self = {}
 	---@cast self Config
 	setmetatable(self, Config)
-	local invaild_type = errors.invalid_type("Config:new")
-	local err = validate.types({
+	local err = validate.types("Config:new", {
 		{ config_table.open_section_symbol, "string", "open_section_symbol" },
 		{
 			config_table.close_section_symbol,
@@ -55,19 +53,19 @@ function Config:new(config_table)
 		{ config_table.allow_makedir, "boolean", "allow_makedir" },
 	})
 	if err then
-		return nil, invaild_type(err)
+		return nil, err
 	end
 	self.open_section_symbol = config_table.open_section_symbol or "> "
 	self.close_section_symbol = config_table.close_section_symbol or "<"
 	for i, note_type in ipairs(config_table.note_schema) do
 		local curr_string = "config_table.note_schema[" .. i .. "]"
-		err = validate.types({
+		err = validate.types("Config:new", {
 			{ note_type, "table", curr_string },
 			{ note_type[1], "string", curr_string .. "[1]" },
 			{ note_type[2], "string?", curr_string .. "[2]" },
 		})
 		if err then
-			return nil, invaild_type(err)
+			return nil, err
 		end
 		if #note_type < 2 then
 			local prefix = note_type[1]:sub(1, 1)

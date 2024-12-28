@@ -3,7 +3,6 @@ local str = utils.str
 local Section = require("core.section")
 local traverse = require("core.traverse")
 local validate = require("core.validate")
-local errors = require("core.errors")
 
 local M = {}
 
@@ -32,7 +31,10 @@ M.error = {
 	---@param err string?
 	---@return string
 	command_failed = function(command, err)
-		return "Failed to execute command: " .. command .. "\nError: " .. (err or "")
+		return "Failed to execute command: "
+			.. command
+			.. "\nError: "
+			.. (err or "")
 	end,
 }
 
@@ -91,9 +93,6 @@ end
 M.prepare = function(section_root, ctx)
 	local _, err = traverse.preorder(section_root, function(section)
 		if section.type[1] == "ROOT" then
-			local path_copy = ctx.src_path:copy()
-			path_copy:pop_directory()
-			section.path = path_copy
 			return
 		end
 
@@ -102,22 +101,20 @@ M.prepare = function(section_root, ctx)
 			utils.read_only(ctx)
 		)
 
-		local err = validate.are_instances({ { path, Path } })
+		local err = validate.are_instances(
+			"config.resolve_directory",
+			{ { path, Path } }
+		)
 		if err then
-			return nil,
-				errors.invalid_instance_returned_from(
-					"config.resolve_directory"
-				)(err)
+			return nil, err
 		end
 
 		section.path = path
-		print("set path to -> " .. tostring(section.path))
 	end)
 	if err then
 		return _, err
 	end
 
-	print("-----")
 	_, err = traverse.postorder(section_root, function(section)
 		if section.type[1] == "ROOT" then
 			section.lines = ctx.lines
@@ -129,22 +126,14 @@ M.prepare = function(section_root, ctx)
 			utils.read_only(ctx)
 		)
 
-		local _err = validate.types({ { lines, "table" } })
+		local _err = validate.types_in_list(
+			"config.transform_lines",
+			lines,
+			validate.RETVAL,
+			"string"
+		)
 		if _err then
-			return nil,
-				errors.invalid_type_returned_from("config.transform_lines")(
-					_err
-				)
-		end
-		-- TODO(gitpushjoe): this pattern could probably be its own function
-		for i, value in ipairs(lines) do
-			_err = validate.types({ { value, "string" } })
-			if _err and value ~= false then
-				return nil,
-					errors.invalid_type_returned_from(
-						"config.transform_lines(...)[" .. i .. "]"
-					)(_err)
-			end
+			return nil, _err
 		end
 
 		ctx.lines[section.start_line] =

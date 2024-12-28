@@ -1,3 +1,5 @@
+local validate = require("core.validate")
+
 ---@class Path
 ---@field parts string[]
 Path = {}
@@ -5,13 +7,25 @@ Path.__index = Path
 Path.__name = "Path"
 
 ---@param path string|string[]
----@return Path
+---@return Path?, string?
 function Path:new(path)
 	self = {}
 	setmetatable(self, Path)
+
+	local err = validate.types("Path:new", { { path, "string|table", "path" } })
+	if err then
+		return nil, err
+	end
+
 	self.parts = {}
 	if type(path) == type({}) then
+
 		---@cast path string[]
+		err = validate.types_in_list("Path:new", path, "path", "string")
+		if err then
+			return nil, err
+		end
+
 		for _, part in ipairs(path) do
 			table.insert(self.parts, part)
 		end

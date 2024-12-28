@@ -39,16 +39,16 @@ if not config then
 end
 
 local virt_filesystem_structure = {
-		home = {
-			user = {
-				p = {
-					["main.txt"] = example_file,
-				},
-				r = {},
-				f = {},
-				["some_file.txt"] = "foo",
+	home = {
+		user = {
+			p = {
+				["main.txt"] = example_file,
 			},
+			r = {},
+			f = {},
+			["some_file.txt"] = "foo",
 		},
+	},
 }
 
 -- TODO(gitpushjoe): add error checking to virtual filesystem
@@ -58,8 +58,7 @@ local vfs = VirtualFilesystem:new(virt_filesystem_structure)
 -- table.insert(example_file, false)
 
 local context
-context, err =
-	Context:new(config, "/home/user/p/main.txt", example_file, vfs)
+context, err = Context:new(config, "/home/user/p/main.txt", example_file, vfs)
 
 if not context then
 	error(err)
