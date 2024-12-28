@@ -154,6 +154,7 @@ end
 ---@param ctx Context
 M.execute = function(section_root, ctx)
 	local io = ctx.io
+
 	---@param path_str string?
 	---@return boolean
 	local function file_exists(path_str)
@@ -164,6 +165,8 @@ M.execute = function(section_root, ctx)
 		file:close()
 		return true
 	end
+	---@param path_str string?
+	---@return file*?
 	local function get_write_handle(path_str)
 		return io.open(path_str or "", "w")
 	end
@@ -175,6 +178,7 @@ M.execute = function(section_root, ctx)
 		if section.type[1] == "ROOT" then
 			full_path = tostring(ctx.src_path)
 		end
+
 		while retry_count <= ctx.config.retry_count do
 			if section.type[1] == "ROOT" then
 				break
@@ -201,6 +205,7 @@ M.execute = function(section_root, ctx)
 			section.path = path
 			full_path = tostring(section.path) or ""
 		end
+
 		if retry_count > ctx.config.retry_count then
 			return nil, M.error.maximum_retry_count(section)
 		end
@@ -220,7 +225,7 @@ M.execute = function(section_root, ctx)
 		if not handle then
 			return nil, M.error.command_failed(command, err)
 		end
-		-- local output = handle:read("*a")
+
 		local succeeded = handle:close()
 		if succeeded ~= true then
 			return nil, M.error.command_failed(command)

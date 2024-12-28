@@ -1,35 +1,35 @@
-local vfs_utils = require("core.virtual_filesystem.utils")
-local Handle = require("core.virtual_filesystem.handle")
-local ProcessHandle = require("core.virtual_filesystem.process_handle")
+local mock_fs_utils = require("core.mock_filesystem.utils")
+local Handle = require("core.mock_filesystem.handle")
+local ProcessHandle = require("core.mock_filesystem.process_handle")
 
----@class VirtualIO
-local VirtualIO = {}
-VirtualIO.__index = VirtualIO
+---@class MockFS_IO
+local MockFS_IO = {}
+MockFS_IO.__index = MockFS_IO
 
 local function make_function_open(self)
 	return function(path, mode)
 		if path == nil then
-			return nil, "Virtual path is nil"
+			return nil, "Mock path is nil"
 		end
 		if type(path) ~= type("") then
-			return nil, "Virtual path is not a string"
+			return nil, "Mock path is not a string"
 		end
 		if #path == 0 then
-			return nil, "Virtual path is empty"
+			return nil, "Mock path is empty"
 		end
 		if path:sub(1, 1) ~= "/" then
-			return nil, 'Virtual path should begin with "/"'
+			return nil, 'Mock path should begin with "/"'
 		end
 		if not (mode == "r" or mode == "w" or mode == "a") then
 			return nil, "Invalid mode"
 		end
-		local parts = vfs_utils.split_to_table(path)
-		local curr = self.virtual_filesystem.structure
+		local parts = mock_fs_utils.split_to_table(path)
+		local curr = self.mock_filesystem.table
 		for i = 1, #parts - 1 do
 			local part = parts[i]
 			curr = curr[part]
 			if curr == nil then
-				return nil, "Virtual sub-directory " .. part .. " not found"
+				return nil, "Mock sub-directory " .. part .. " not found"
 			end
 		end
 		if
@@ -45,15 +45,18 @@ local function make_function_open(self)
 	end
 end
 
----@param self VirtualIO
+---@param self MockFS_IO
 local function make_function_popen(self)
 	return function(cmd)
 		local match = string.gmatch(cmd, "mkdir %-p '(.*)' 2>%&1")()
 		if not match then
 			return nil, "Command is currently unimplemented"
 		end
-		local path = Path:new(match)
-		local curr = self.virtual_filesystem.structure
+		local path, err = Path:new(match)
+		if not path then
+			return nil, err
+		end
+		local curr = self.mock_filesystem.table
 		for _, part in ipairs(path.parts) do
 			if part ~= "" then
 				if curr[part] and type(curr[part]) ~= type({}) then
@@ -69,15 +72,15 @@ local function make_function_popen(self)
 	end
 end
 
----@param virtual_filesystem VirtualFilesystem
----@return VirtualIO
-function VirtualIO:new(virtual_filesystem)
+---@param mock_filesystem MockFilesystem
+---@return MockFS_IO
+function MockFS_IO:new(mock_filesystem)
 	self = {}
-	setmetatable(self, VirtualIO)
-	self.virtual_filesystem = virtual_filesystem
+	setmetatable(self, MockFS_IO)
+	self.mock_filesystem = mock_filesystem
 	self.open = make_function_open(self)
 	self.popen = make_function_popen(self)
 	return self
 end
 
-return VirtualIO
+return MockFS_IO

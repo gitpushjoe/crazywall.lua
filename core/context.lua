@@ -1,15 +1,16 @@
 local utils = require("core.utils")
 local Path = require("core.path")
 local validate = require("core.validate")
+require "core.mock_filesystem.mock_filesystem"
 local str = utils.str
 
 ---@class (exact) Context
 ---@field config Config
 ---@field path string
 ---@field lines (string|boolean)[]
----@field use_virt boolean
+---@field use_mock_filesystem boolean
 ---@field src_path Path
----@field virt_filesystem VirtualFilesystem?
+---@field mock_filesystem MockFilesystem?
 ---@field io iolib
 
 Context = {}
@@ -19,17 +20,17 @@ Context.__name = "Context"
 ---@param config Config
 ---@param path string
 ---@param inp string|string[]
----@param virt_filesystem VirtualFilesystem?
+---@param mock_filesystem MockFilesystem?
 ---@return Context?, string?
-function Context:new(config, path, inp, virt_filesystem)
+function Context:new(config, path, inp, mock_filesystem)
 	self = {}
 	---@cast self Context
 	setmetatable(self, Context)
 
 	local err = validate.are_instances("Context:new", {
 		{ config, Config, "config" },
-		virt_filesystem
-				and { virt_filesystem, VirtualFilesystem, "virt_filesystem" }
+		mock_filesystem
+				and { mock_filesystem, MockFilesystem, "mock_filesystem" }
 			or nil,
 	})
 	if err then
@@ -37,8 +38,8 @@ function Context:new(config, path, inp, virt_filesystem)
 	end
 
 	self.config = config or {}
-	self.use_virt = not not virt_filesystem
-	self.virt_filesystem = virt_filesystem
+	self.use_mock_filesystem = not not mock_filesystem
+	self.mock_filesystem = mock_filesystem
 
 	---@type unknown
 	err = validate.types("Context:new", {
@@ -51,7 +52,7 @@ function Context:new(config, path, inp, virt_filesystem)
 
 	self.path = path
 	self.lines = {}
-	self.io = virt_filesystem and virt_filesystem.io or io
+	self.io = mock_filesystem and mock_filesystem.io or io
 
 	local lines = {}
 	if type(inp) == type("") then

@@ -4,7 +4,7 @@ package.path = package.path .. ";" .. script_dir .. "/?.lua"
 local utils = require("core.utils")
 local default_config = require("core.defaults.config")
 local fold = require("core.fold")
-local VirtualFilesystem = require("core.virtual_filesystem.vfs")
+local MockFilesystem = require("core.mock_filesystem.mock_filesystem")
 
 local example_file = [[# My Notes
 
@@ -38,7 +38,7 @@ if not config then
 	error(err)
 end
 
-local virt_filesystem_structure = {
+local mock_filesystem_table = {
 	home = {
 		user = {
 			p = {
@@ -52,13 +52,13 @@ local virt_filesystem_structure = {
 }
 
 -- TODO(gitpushjoe): add error checking to virtual filesystem
-local vfs = VirtualFilesystem:new(virt_filesystem_structure)
+local mock_fs = MockFilesystem:new(mock_filesystem_table)
 
 -- example_file = utils.str.split_lines_to_list(example_file)
 -- table.insert(example_file, false)
 
 local context
-context, err = Context:new(config, "/home/user/p/main.txt", example_file, vfs)
+context, err = Context:new(config, "/home/user/p/main.txt", example_file, mock_fs)
 
 if not context then
 	error(err)
@@ -80,5 +80,4 @@ if err then
 end
 
 print()
-print(vfs)
--- print(utils.inspect(virt_filesystem_structure))
+print(mock_fs)

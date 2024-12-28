@@ -1,5 +1,4 @@
 require("core.section")
-local utils = require("core.utils")
 
 local M = {}
 
