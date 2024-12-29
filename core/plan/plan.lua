@@ -1,4 +1,3 @@
-local validate = require("core.validate")
 local Action = require("core.plan.action")
 local utils = require("core.utils")
 require("core.plan.action")

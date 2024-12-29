@@ -22,10 +22,14 @@ M.errors = {
 		return "Inconsistent indent on line " .. line
 	end,
 
+	---@param retry_count number
 	---@param section Section?
 	---@return string
-	maximum_retry_count = function(section)
-		return "Maximum retry count reached: " .. (tostring(section) or "nil")
+	maximum_retry_count = function(retry_count, section)
+		return "Maximum retry count of "
+			.. retry_count
+			.. " reached: "
+			.. (tostring(section) or "nil")
 	end,
 
 	---@param path string
@@ -124,6 +128,7 @@ end
 M.prepare = function(section_root, ctx)
 	local _, err = traverse.preorder(section_root, function(section)
 		if section.type[1] == "ROOT" then
+			section.path = ctx.src_path
 			return
 		end
 
@@ -181,7 +186,6 @@ M.prepare = function(section_root, ctx)
 	if err then
 		return nil, err
 	end
-	-- print("lines: \n" .. str.join_lines(section_root:get_lines()))
 end
 
 ---@param section_root Section
@@ -206,7 +210,18 @@ M.execute = function(section_root, ctx, is_dry_run)
 	---@param path_str string?
 	---@return file*?
 	local function get_write_handle(path_str)
-		return io.open(path_str or "", "w")
+		if is_dry_run then
+			local directory = assert(Path:new(path_str or "")):directory()
+			if not file_exists(tostring(directory)) then
+				return nil
+			end
+			local file, err = io.open(tostring(directory), "w")
+			if file then
+				error("TODO(gitpushjoe): unexpected error")
+			end
+			return utils.str.ends_with(err or "", "directory") and {} or nil
+		end
+		return io.open(path_str or "", is_dry_run and "a" or "w")
 	end
 
 	---@param handle file*?
@@ -252,13 +267,10 @@ M.execute = function(section_root, ctx, is_dry_run)
 		local write_handle
 		local full_path = tostring(section.path) or ""
 		local is_overwrite = false
-		if section.type[1] == "ROOT" then
-			return
-			-- full_path = tostring(ctx.src_path)
-		end
 
 		while retry_count <= ctx.config.retry_count do
 			if section.type[1] == "ROOT" then
+				is_overwrite = true
 				break
 			end
 			if not file_exists(full_path) then
@@ -286,7 +298,8 @@ M.execute = function(section_root, ctx, is_dry_run)
 		end
 
 		if retry_count > ctx.config.retry_count then
-			return nil, M.errors.maximum_retry_count(section)
+			return nil,
+				M.errors.maximum_retry_count(ctx.config.retry_count, section)
 		end
 		write_handle = write_handle or get_write_handle(full_path)
 

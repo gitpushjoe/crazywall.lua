@@ -27,7 +27,16 @@ Section.__name = "Section"
 ---@param parent Section?
 ---@param indent string?
 ---@return Section?, string?
-function Section:new(id, type, context, start_line, end_line, children, parent, indent)
+function Section:new(
+	id,
+	type,
+	context,
+	start_line,
+	end_line,
+	children,
+	parent,
+	indent
+)
 	self = {}
 	setmetatable(self, Section)
 	---@cast self Section
@@ -38,13 +47,7 @@ function Section:new(id, type, context, start_line, end_line, children, parent, 
 		{ start_line, "number", "start_line" },
 		{ end_line, "number?", "end_line" },
 		{ children, "table?", "children" },
-	})
-	if err then
-		return nil, err
-	end
-
-	---@type unknown
-	err = validate.are_instances("Section:new", {
+	}) or validate.are_instances("Section:new", {
 		{ context, Context, "context" },
 		parent and { parent, Section, "parent" },
 	})
@@ -117,6 +120,7 @@ function Section:__tostring()
 		.. "}"
 		.. ',\n\tpath = "'
 		.. (tostring(self.path) or "nil")
+		-- TODO(gitpushjoe): Make this print out a list instead of the string
 		.. '",\n\tlines = '
 		.. (self:get_lines() and '"' .. utils.str
 			.join_lines((self:get_lines() or {}))

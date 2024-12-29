@@ -19,7 +19,6 @@ function Path:new(path)
 
 	self.parts = {}
 	if type(path) == type({}) then
-
 		---@cast path string[]
 		err = validate.types_in_list("Path:new", path, "path", "string")
 		if err then
@@ -102,10 +101,10 @@ end
 
 ---@return Path
 function Path:copy()
-	return Path:new(self.parts)
+	return assert(Path:new(self.parts))
 end
 
----@reutrn Path
+---@return Path
 function Path:directory()
 	local copy = self:copy()
 	return copy:to_directory()

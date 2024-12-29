@@ -1,6 +1,5 @@
-local utils = require "core.utils"
-require "core.path"
-
+local utils = require("core.utils")
+require("core.path")
 
 ---@alias CREATE_ACTION { type: "CREATE", path: Path, lines: string[] }
 ---@alias OVERWRITE_ACTION { type: "OVERWRITE", path: Path, lines: string[] }
@@ -28,7 +27,7 @@ function M.create(path, lines)
 	local action = {
 		type = M.CREATE,
 		path = path,
-		lines = corrected_lines
+		lines = corrected_lines,
 	}
 	return utils.read_only(action)
 end
@@ -47,7 +46,7 @@ function M.overwrite(path, lines)
 	local action = {
 		type = M.OVERWRITE,
 		path = path,
-		lines = corrected_lines
+		lines = corrected_lines,
 	}
 	return utils.read_only(action)
 end
@@ -58,7 +57,7 @@ function M.mkdir(dir)
 	---@type MKDIR_ACTION
 	local action = {
 		type = M.MKDIR,
-		path = dir
+		path = dir,
 	}
 	return utils.read_only(action)
 end

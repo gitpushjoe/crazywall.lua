@@ -8,7 +8,8 @@ M.RETVAL = "RETVAL"
 ---@param arg_name string?
 ---@param expected_type string
 ---@param actual string
----@overload fun(function_name: string, triplet: [any, string, string?]): string
+---@overload fun(function_name: string, triplet: {[1]: any, [2]: string, [3]: string?}): string
+---@return string
 M.invalid_type_error = function(function_name, arg_name, expected_type, actual)
 	arg_name = arg_name or M.RETVAL
 	if type(arg_name) == type({}) then
@@ -34,7 +35,7 @@ end
 ---@param arg_name string?
 ---@param expected_class table
 ---@param actual any
----@overload fun(function_name: string, triplet: [any, table, string?]): string
+---@overload fun(function_name: string, triplet: {[1]: any, [2]: table, [3]: string?}): string
 M.invalid_instance_error = function(
 	function_name,
 	arg_name,
@@ -70,7 +71,7 @@ M.invalid_instance_error = function(
 end
 
 ---@param function_name string
----@param data [any, string, string?][]
+---@param data {[1]: any, [2]: string, [3]: string?}[]
 ---@return string?
 M.types = function(function_name, data)
 	for _, item in ipairs(data) do
@@ -129,7 +130,7 @@ M.types_in_list = function(function_name, list, arg_name, expected_type)
 end
 
 ---@param function_name string
----@param data [any, table, string?][]
+---@param data {[1]: any, [2]: table, [3]: string?}[]
 ---@return string?
 M.are_instances = function(function_name, data)
 	for _, item in ipairs(data) do

@@ -1,12 +1,11 @@
 local utils = require("core.utils")
 local Path = require("core.path")
 local validate = require("core.validate")
-require "core.mock_filesystem.mock_filesystem"
+require("core.mock_filesystem.mock_filesystem")
 local str = utils.str
 
 ---@class (exact) Context
 ---@field config Config
----@field path string
 ---@field lines (string|boolean)[]
 ---@field use_mock_filesystem boolean
 ---@field src_path Path
@@ -50,7 +49,6 @@ function Context:new(config, path, inp, mock_filesystem)
 		return nil, err
 	end
 
-	self.path = path
 	self.lines = {}
 	self.io = mock_filesystem and mock_filesystem.io or io
 
@@ -76,7 +74,12 @@ function Context:new(config, path, inp, mock_filesystem)
 		end
 	end
 	self.lines = lines
-	self.src_path = Path:new(path)
+	local src_path
+	src_path, err = Path:new(path)
+	if not src_path then
+		return nil, err
+	end
+	self.src_path = src_path
 	return self
 end
 

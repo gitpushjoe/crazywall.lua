@@ -1,30 +1,41 @@
-local M = {}
-M.__index = M
+---@class MockFS_ProcHandle
+---@field result string
+---@field closed boolean
+---@field succeeded boolean
+---@field code integer?
+MockFS_ProcHandle = {}
+MockFS_ProcHandle.__index = MockFS_ProcHandle
 
-function M:new(result, succeeded, code)
+---@param result string
+---@param succeeded boolean
+---@param code integer?
+---@return MockFS_ProcHandle
+function MockFS_ProcHandle:new(result, succeeded, code)
 	self = {}
 	self.opened = true
-	setmetatable(self, M)
+	setmetatable(self, MockFS_ProcHandle)
 	self.result = result
 	self.succeeded = succeeded
 	self.code = code
 	return self
 end
 
-function M:write()
+function MockFS_ProcHandle:write()
 	error("currently unimplemented")
 end
 
-function M:read()
+---@return string
+function MockFS_ProcHandle:read()
 	if self.closed then
 		error("attempt to read from a closed file")
 	end
 	return self.result
 end
 
-function M:close()
+---@return boolean, string, integer?
+function MockFS_ProcHandle:close()
 	self.opened = false
 	return self.succeeded, "exit", self.code
 end
 
-return M
+return MockFS_ProcHandle

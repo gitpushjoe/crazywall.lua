@@ -3,7 +3,7 @@ local Handle = require("core.mock_filesystem.handle")
 local ProcessHandle = require("core.mock_filesystem.process_handle")
 
 ---@class MockFS_IO
-local MockFS_IO = {}
+MockFS_IO = {}
 MockFS_IO.__index = MockFS_IO
 
 local function make_function_open(self)
