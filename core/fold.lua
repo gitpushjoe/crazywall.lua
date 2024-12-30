@@ -128,7 +128,7 @@ end
 M.prepare = function(section_root, ctx)
 	local _, err = traverse.preorder(section_root, function(section)
 		if section.type[1] == "ROOT" then
-			section.path = ctx.src_path
+			section.path = ctx.dest_path
 			return
 		end
 
@@ -295,6 +295,10 @@ M.execute = function(section_root, ctx, is_dry_run)
 			)
 			section.path = path
 			full_path = tostring(section.path) or ""
+		end
+
+		if section.type[1] == "ROOT" and ctx.preserve then
+			return
 		end
 
 		if retry_count > ctx.config.retry_count then

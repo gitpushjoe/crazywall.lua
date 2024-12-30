@@ -104,6 +104,20 @@ function Path:copy()
 	return assert(Path:new(self.parts))
 end
 
+---@param rhs Path
+---@return boolean
+function Path:__eq(rhs)
+	if #self.parts ~= #rhs.parts then
+		return false
+	end
+	for i=1,#self.parts do
+		if self.parts[i] ~= rhs.parts[i] then
+			return false
+		end
+	end
+	return true
+end
+
 ---@return Path
 function Path:directory()
 	local copy = self:copy()
