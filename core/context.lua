@@ -1,8 +1,8 @@
 local utils = require("core.utils")
 local Path = require("core.path")
 local validate = require("core.validate")
-require("core.mock_filesystem.mock_filesystem")
 local str = utils.str
+local streams = require("core.streams")
 
 ---@class (exact) Context
 ---@field config Config
@@ -11,8 +11,10 @@ local str = utils.str
 ---@field src_path Path
 ---@field dest_path Path
 ---@field mock_filesystem MockFilesystem?
+---@field is_dry_run boolean
 ---@field auto_confirm boolean
----@field dry_run_opts 0|1|2|3
+---@field plan_stream Stream
+---@field text_stream Stream
 ---@field preserve boolean
 ---@field io iolib
 
@@ -20,20 +22,15 @@ Context = {}
 Context.__index = Context
 Context.__name = "Context"
 
-Context.DRY_RUN = {
-	NO_DRY_RUN = 0,
-	TEXT_ONLY = 1,
-	PLAN_ONLY = 2,
-	TEXT_AND_PLAN = 3,
-}
-
 ---@param config Config
 ---@param src_path string
 ---@param dest_path string
 ---@param inp string|string[]
 ---@param mock_filesystem MockFilesystem?
+---@param is_dry_run boolean
 ---@param auto_confirm boolean
----@param dry_run_opts 0|1|2|3
+---@param plan_stream Stream
+---@param text_stream Stream
 ---@param preserve boolean
 ---@return Context?, string?
 function Context:new(
@@ -42,8 +39,10 @@ function Context:new(
 	dest_path,
 	inp,
 	mock_filesystem,
+	is_dry_run,
 	auto_confirm,
-	dry_run_opts,
+	plan_stream,
+	text_stream,
 	preserve
 )
 	self = {}
@@ -70,8 +69,8 @@ function Context:new(
 		{ dest_path, "string?", "dest_path" },
 		{ inp, "table|string", "inp" },
 		{ auto_confirm, "boolean", "auto_confirm" },
-		{ dry_run_opts, "number", "dry_run_opts" },
 		{ preserve, "boolean", "preserve" },
+		{ is_dry_run, "boolean", "is_dry_run" },
 	})
 	if err then
 		return nil, err
@@ -79,14 +78,19 @@ function Context:new(
 
 	--- TODO(gitpushjoe): add error message
 	assert(
-		0 <= dry_run_opts
-			and dry_run_opts <= 3
-			and math.floor(dry_run_opts) == dry_run_opts
+		(plan_stream == streams.NONE
+			or plan_stream == streams.STDOUT
+			or plan_stream == streams.STDERR)
+		and
+		(text_stream == streams.NONE
+		or text_stream == streams.STDOUT
+		or text_stream == streams.STDERR)
 	)
 
 	self.lines = {}
 	self.io = mock_filesystem and mock_filesystem.io or io
 	self.preserve = preserve
+	self.is_dry_run = is_dry_run
 
 	local lines = {}
 	if type(inp) == type("") then
@@ -109,9 +113,11 @@ function Context:new(
 			table.insert(lines, tostring(line))
 		end
 	end
+
 	self.lines = lines
 	self.auto_confirm = auto_confirm
-	self.dry_run_opts = dry_run_opts
+	self.plan_stream = plan_stream
+	self.text_stream = text_stream
 	local source, dest
 	source, err = Path:new(src_path)
 	if not source then

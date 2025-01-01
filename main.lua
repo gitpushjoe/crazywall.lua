@@ -16,7 +16,8 @@ local fold = require("core.fold")
 local Config = require("core.config")
 local Path = require("core.path")
 local custom_configs = require("configs")
-local argparse = require("core.argparse")
+local Parser = require("core.parser")
+local streams = require("core.streams")
 local utils = require("core.utils")
 
 ---@param handle file*?
@@ -47,92 +48,96 @@ local warn = function(warning)
 	os.exit(1)
 end
 
-local kwarg_names = {
-	"--out",
-	"-o",
-	"--config",
-	"-c",
-}
-local arg_table, err = argparse.get_arg_table(arg, kwarg_names)
-if not arg_table then
+---@param text string
+---@param stream Stream
+local print_to_stream = function(text, stream)
+	if stream == streams.STDOUT then
+		print(text)
+	end
+	if stream == streams.STDERR then
+		io.stderr:write(text .. "\n")
+	end
+end
+
+local parser = assert(Parser:new({
+	{
+		"--dry-run",
+		"-dr",
+		"Enable dry-run, which will not modify or add any new files or directories.",
+	},
+	{
+		"--help",
+		"-h",
+		"Prints this helptext.",
+	},
+	{
+		"--yes",
+		"-y",
+		"Automatically confirm all prompts.",
+	},
+	{
+		"--preserve",
+		"-p",
+		"Will not edit the source file.",
+	},
+}, {
+	{
+		"--plan-stream <stream>",
+		"-ps <stream>",
+		"The stream to print the crazywall plan object to. (0 for none, 1 for stdout, 2 for stderr.)  Defaults to 1.",
+	},
+	{
+		"--text-stream <stream>",
+		"-ts <stream>",
+		"The stream to print the updated source text to. (0 for none, 1 for stdout, 2 for stderr.)  Defaults to 1.",
+	},
+	{
+		"--out <file>",
+		"-o <file>",
+		"Sets the destination for the new source file text to <file>. Defaults to the path to the source file. Set to 1 for stdout and 2 for stderr.",
+	},
+	{
+		"--config <config>",
+		"-c <config>",
+		'Uses the config named <config> in `configs.lua`. Defaults to "DEFAULT".',
+	},
+}))
+
+local success, err = parser:parse(arg)
+if not success then
 	error(err)
 end
 
----@param table ArgTable
-local print_arg_table = function(table)
-	for k, v in pairs(table) do
-		print(k)
-		for k2, v2 in pairs(v) do
-			io.write("\t")
-			if type(k2) ~= type(1) then
-				io.write(k2 .. ": ")
-			end
-			print(v2)
-		end
-	end
+if parser:find("--help") then
+	print(parser:get_helptext())
+	os.exit(0)
 end
 
-if #arg_table.args == 0 then
-	-- TODO(gitpushjoe): this can actually be okay
-	error("No filenames passed.")
+if #parser.data.args == 0 then
+	error("No filename passed.")
 end
 
-local DRY_RUN = { "--dry-run", "-dr" }
-local PLAN_ONLY = { "--plan-only", "-po" }
-local TEXT_ONLY = { "--text-only", "-to" }
-local AUTO_CONFIRM = { "--yes", "-y" }
-local OUT = { "--out", "-o" }
-local CONFIG = { "--config", "-c" }
-local PRESERVE = { "--preserve", "-p" }
+local filename = read_from_handle(
+	io.popen("realpath " .. Path:new(parser.data.args[1]):escaped())
+)
 
-local po_flag = argparse.arg_table_find(arg_table, PLAN_ONLY)
-local to_flag = argparse.arg_table_find(arg_table, TEXT_ONLY)
-local dr_flag = argparse.arg_table_find(arg_table, DRY_RUN)
-local y_flag = argparse.arg_table_find(arg_table, AUTO_CONFIRM)
-local p_flag = argparse.arg_table_find(arg_table, PRESERVE)
-local dest_path = argparse.arg_table_find(arg_table, OUT)
-
-local dry_run_opts = 0
-if not dr_flag then
-	for _, opt in ipairs({ PLAN_ONLY, TEXT_ONLY }) do
-		local flag = argparse.arg_table_find(arg_table, opt)
-		if flag then
-			error(flag .. " used without specifying --dry-run")
-		end
-	end
-else
-	if po_flag and to_flag then
-		warn(
-			"Mutually exclusive flags "
-				.. po_flag
-				.. " and "
-				.. to_flag
-				.. " found. Both ignored."
+local dest_path = parser:find("--out")
+		and read_from_handle(
+			io.popen(
+				"realpath " .. Path:new(assert(parser:find("--out"))):escaped()
+			)
 		)
-	end
-	dry_run_opts = (po_flag and Context.DRY_RUN.PLAN_ONLY)
-		or (to_flag and Context.DRY_RUN.TEXT_ONLY)
-		or Context.DRY_RUN.TEXT_AND_PLAN
-end
-
-if dest_path and p_flag then
-	error(
-		"Mutually exclusive flags " .. "--out" .. " and " .. p_flag .. " found."
-	)
-end
-
-local filename =
-	read_from_handle(io.popen("realpath " .. Path:new(arg[1]):escaped()))
+	or filename
 local home_dir = read_from_handle(io.popen("eval echo ~$USER"))
 local text = read_from_handle(io.open(filename, "r"))
 
-local config_name = argparse.arg_table_find(arg_table, CONFIG) or "DEFAULT"
+local config_name = parser:find("--config") or "DEFAULT"
 if not custom_configs[config_name] then
 	error('User-defined config "' .. config_name .. '" not found')
 end
 
 local config
-config, err = Config:new(custom_configs[config_name] or {})
+config, err = Config:new(custom_configs[config_name])
 if not config then
 	error(err)
 end
@@ -141,13 +146,16 @@ local ctx
 ctx, err = Context:new(
 	config,
 	filename,
-	PRESERVE and filename or dest_path or filename,
+	dest_path,
 	text,
 	nil,
-	y_flag ~= nil,
-	dry_run_opts,
-	p_flag ~= nil
+	parser:find("--dry-run") ~= nil,
+	parser:find("--yes") ~= nil,
+	math.tointeger(parser:find("--plan-stream")) or streams.STDOUT,
+	math.tointeger(parser:find("--text-stream")) or streams.STDOUT,
+	parser:find("--preserve") ~= nil
 )
+
 if not ctx then
 	error(err)
 end
@@ -169,27 +177,19 @@ if err then
 	error(err)
 end
 
-if
-	ctx.dry_run_opts == Context.DRY_RUN.PLAN_ONLY
-	or ctx.dry_run_opts == Context.DRY_RUN.TEXT_AND_PLAN
-then
-	print("PLAN (dry run): \n" .. string.gsub(tostring(plan), home_dir, "~"))
-end
-
-if
-	ctx.dry_run_opts == Context.DRY_RUN.NO_DRY_RUN
-then
-	print("PLAN: \n" .. string.gsub(tostring(plan), home_dir, "~"))
-end
-
-if
-	ctx.dry_run_opts == Context.DRY_RUN.TEXT_ONLY
-	or ctx.dry_run_opts == Context.DRY_RUN.TEXT_AND_PLAN
-then
-	print(utils.str.join_lines(root:get_lines()))
-end
-
-if ctx.dry_run_opts ~= Context.DRY_RUN.NO_DRY_RUN then
+print_to_stream(
+	"PLAN"
+		.. (ctx.is_dry_run and "(dry-run) " or "")
+		.. ": \n"
+		.. string.gsub(tostring(plan), home_dir, "~")
+		.. "\n",
+	ctx.plan_stream
+)
+if ctx.is_dry_run then
+	print_to_stream(
+		"TEXT (dry run): \n" .. utils.str.join_lines(root:get_lines()),
+		ctx.text_stream
+	)
 	os.exit(0)
 end
 
@@ -205,9 +205,10 @@ end
 
 plan, err = fold.execute(root, ctx, false)
 if err then
-    error(err)
+	error(err)
 end
 
-if ctx.preserve then
-	print(utils.str.join_lines(root:get_lines()))
-end
+print_to_stream(
+	"TEXT: \n" .. utils.str.join_lines(root:get_lines()),
+	ctx.text_stream
+)

@@ -270,7 +270,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 
 		while retry_count <= ctx.config.retry_count do
 			if section.type[1] == "ROOT" then
-				is_overwrite = true
+				is_overwrite = ctx.src_path == ctx.dest_path
 				break
 			end
 			if not file_exists(full_path) then
