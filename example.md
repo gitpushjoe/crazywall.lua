@@ -28,6 +28,9 @@ Here:
 - $\hat{H}$ is the Hamiltonian operator, representing the total energy of the system. [!h3]
 [!h2]
 
+#### {question}
+What is the importance of the energy of the system? [!h4]
+
 ## Quantum States
 
 - **Wave Function**

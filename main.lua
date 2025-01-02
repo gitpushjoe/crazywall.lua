@@ -128,7 +128,7 @@ local dest_path = parser:find("--out")
 			)
 		)
 	or filename
-local home_dir = read_from_handle(io.popen("eval echo ~$USER"))
+
 local text = read_from_handle(io.open(filename, "r"))
 
 local config_name = parser:find("--config") or "DEFAULT"
@@ -141,6 +141,8 @@ config, err = Config:new(custom_configs[config_name])
 if not config then
 	error(err)
 end
+
+local source_dir = tostring(assert(Path:new(filename):directory()))
 
 local ctx
 ctx, err = Context:new(
@@ -179,9 +181,9 @@ end
 
 print_to_stream(
 	"PLAN"
-		.. (ctx.is_dry_run and "(dry-run) " or "")
+		.. (ctx.is_dry_run and "(dry-run)" or "")
 		.. ": \n"
-		.. string.gsub(tostring(plan), home_dir, "~")
+		.. string.gsub(tostring(plan), source_dir, "./")
 		.. "\n",
 	ctx.plan_stream
 )

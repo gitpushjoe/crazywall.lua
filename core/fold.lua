@@ -172,16 +172,26 @@ M.prepare = function(section_root, ctx)
 			return nil, _err
 		end
 
+		section.lines = lines
+
 		local reference = ctx.config.resolve_reference(section, ctx)
-		ctx.lines[section.start_line] = string.sub(
-			section.indent,
-			section.parent and #section.parent.indent or 0
-		) .. reference
+		_err = validate.types(
+			"config.resolve_reference",
+			{ { reference, "string|boolean" } }
+		)
+		if _err then
+			return nil, _err
+		end
+
+		ctx.lines[section.start_line] = reference
+				and (string.sub(
+					section.indent,
+					section.parent and #section.parent.indent or 0
+				) .. reference)
+			or false
 		for i = section.start_line + 1, section.end_line do
 			ctx.lines[i] = false
 		end
-
-		section.lines = lines
 	end)
 	if err then
 		return nil, err
@@ -196,10 +206,14 @@ M.execute = function(section_root, ctx, is_dry_run)
 	is_dry_run = is_dry_run or false
 	local io = ctx.io
 	local plan = Plan:new()
+	local created_or_modified_paths = {}
 
 	---@param path_str string?
 	---@return boolean
 	local function file_exists(path_str)
+		if created_or_modified_paths[path_str] then
+			return true
+		end
 		local file = io.open(path_str or "", "r")
 		if file == nil then
 			return false
@@ -207,6 +221,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 		file:close()
 		return true
 	end
+
 	---@param path_str string?
 	---@return file*?
 	local function get_write_handle(path_str)
@@ -231,6 +246,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 	---@return nil
 	local function write(handle, lines, path, is_overwrite)
 		is_overwrite = is_overwrite or false
+		created_or_modified_paths[tostring(path)] = 1
 		if not is_dry_run and handle then
 			-- TODO(gitpushjoe): handle possibility of write failure
 			handle:write(str.join_lines(lines))
@@ -244,6 +260,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 	---@param directory Path
 	---@return string?
 	local function mkdir(directory)
+		created_or_modified_paths[tostring(directory)] = 1
 		if not is_dry_run then
 			local command = "mkdir -p "
 				.. tostring(directory:escaped())
@@ -252,7 +269,6 @@ M.execute = function(section_root, ctx, is_dry_run)
 			if not handle then
 				return M.errors.command_failed(command, err)
 			end
-
 			local succeeded
 			succeeded, err = handle:close()
 			if succeeded ~= true then
@@ -267,6 +283,11 @@ M.execute = function(section_root, ctx, is_dry_run)
 		local write_handle
 		local full_path = tostring(section.path) or ""
 		local is_overwrite = false
+
+		if section.path:is_void() then
+			plan:add(Action.ignore(section.lines))
+			return
+		end
 
 		while retry_count <= ctx.config.retry_count do
 			if section.type[1] == "ROOT" then
@@ -316,7 +337,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 			return nil, M.errors.cannot_write(full_path, section)
 		end
 
-		local err = mkdir(section.path:directory())
+		local err = mkdir(assert(section.path:directory()))
 		if err then
 			return nil, err
 		end

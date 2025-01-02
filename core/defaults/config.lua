@@ -13,13 +13,11 @@ local default_config = {
 	},
 
 	resolve_path = function(section, ctx)
-		local path = (function()
-			if section.parent and section.parent.path then
-				return section.parent.path:directory()
-			else
-				return ctx.src_path:directory()
-			end
-		end)()
+		local path = ((section.parent and section.parent.path) or ctx.src_path):directory()
+
+		if not path then
+			return Path:void()
+		end
 
 		local title = utils.str.trim(section:get_lines()[1])
 			or ("Untitled " .. section.id)
@@ -27,6 +25,7 @@ local default_config = {
 		if #section.children > 0 then
 			path:push_directory(title)
 		end
+
 		path:set_filename(title .. ".md")
 		return path
 	end,
@@ -38,7 +37,8 @@ local default_config = {
 	end,
 
 	resolve_reference = function(section)
-		return "[[" .. section.path:get_filename() .. "]]"
+		return section.path and "[[" .. section.path:get_filename() .. "]]"
+			or false
 	end,
 
 	resolve_collision = function(path, _, _, retry_count)

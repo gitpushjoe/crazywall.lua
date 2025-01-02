@@ -16,13 +16,20 @@ local configs = {
 		},
 
 		resolve_path = function(section, ctx)
-			local path = (function()
-				if section.parent and section.parent.path then
-					return section.parent.path:directory()
-				else
-					return ctx.src_path:directory()
-				end
-			end)()
+			local path = (
+				(section.parent and section.parent.path) or ctx.src_path
+			):directory()
+
+			if not path then
+				return Path:void()
+			end
+
+			if
+				utils.str.starts_with(section:get_lines()[1], "{")
+				and utils.str.ends_with(section:get_lines()[1], "}")
+			then
+				return Path:void()
+			end
 
 			local title = utils.str.trim(section:get_lines()[1])
 				or ("Untitled " .. section.id)
@@ -37,6 +44,9 @@ local configs = {
 		end,
 
 		resolve_reference = function(section)
+			if section.path:is_void() then
+				return false
+			end
 			local filename = section.path:get_filename()
 			if filename == "_index.md" then
 				filename = section.path.parts[#section.path.parts - 1]
@@ -46,6 +56,7 @@ local configs = {
 			end
 			return "[[" .. filename .. "]]"
 		end,
+
 		transform_lines = function(section)
 			local lines = section:get_lines()
 			lines[1] = section.type[2]:gsub("^- ", "")

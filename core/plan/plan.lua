@@ -25,38 +25,11 @@ end
 
 ---@return string
 function Plan:__tostring()
-	local out = {}
-	local plan_cache = {
-		[Action.CREATE] = {},
-		[Action.MKDIR] = {},
-		[Action.OVERWRITE] = {},
-	}
-	for i = #self.actions, 1, -1 do
-		local action = self.actions[i]
-		if plan_cache[action.type][tostring(action.path)] == nil then
-			local text = "[ "
-				.. string.rep(" ", #"OVERWRITE" - #action.type)
-				.. action.type
-				.. " ] "
-			-- TODO(gitpushjoe): align this
-			if action.type ~= Action.MKDIR then
-				local char_count = 0
-				for _, line in ipairs(action.lines) do
-					char_count = char_count + #line
-				end
-				text = text
-					.. "( "
-					.. #action.lines
-					.. "l / "
-					.. char_count
-					.. "c ) "
-			end
-			text = text .. tostring(action.path)
-			table.insert(out, 1, text)
-			plan_cache[action.type][tostring(action.path)] = 1
-		end
+	local text = "action         lines   chars   path"
+	for _, action in ipairs(self.actions) do
+		text = text .. "\n" .. action:tostring()
 	end
-	return utils.str.join_lines(out)
+	return text
 end
 
 return Plan

@@ -9,7 +9,7 @@ require("core.context")
 ---@field note_schema NoteSchema?
 ---@field resolve_path (fun(section: Section, context: Context): Path)|nil
 ---@field transform_lines (fun(section: Section, context: Context): string[])|nil
----@field resolve_reference (fun(section: Section, context: Context): string)|nil
+---@field resolve_reference (fun(section: Section, context: Context): string|boolean)|nil
 ---@field retry_count number?
 ---@field resolve_collision (fun(path: Path, section: Section, context: Context, retry_count: number): Path?)|nil
 ---@field allow_overwrite boolean?
@@ -19,7 +19,7 @@ require("core.context")
 ---@field note_schema NoteSchema
 ---@field resolve_path fun(section: Section, context: Context): Path
 ---@field transform_lines fun(section: Section, context: Context): string[]
----@field resolve_reference fun(section: Section, context: Context): string
+---@field resolve_reference fun(section: Section, context: Context): string|boolean
 ---@field retry_count number
 ---@field resolve_collision fun(path: Path, section: Section, context: Context, retry_count: number): Path?
 ---@field allow_overwrite boolean
