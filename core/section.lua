@@ -101,9 +101,13 @@ end
 ---@return string?
 function Section:__tostring()
 	return "Section {"
-		.. '\n\ttype = "'
+		.. '\n\ttype = {"'
 		.. self.type[1]
-		.. '"'
+		.. '", "'
+		.. self.type[2]
+		.. '", "'
+		.. self.type[3]
+		.. '"}'
 		.. ",\n\tstart_line = "
 		.. self.start_line
 		.. ",\n\tend_line = "
@@ -120,15 +124,26 @@ function Section:__tostring()
 		.. "}"
 		.. ',\n\tpath = "'
 		.. (tostring(self.path) or "nil")
-		-- TODO(gitpushjoe): Make this print out a list instead of the string
-		.. '",\n\tlines = '
-		.. (self:get_lines() and '"' .. utils.str
-			.join_lines((self:get_lines() or {}))
-			:gsub("\\", "\\\\")
-			:gsub("\n", "\\n")
-			:gsub("\r", "\\r")
-			:gsub("\t", "\\t") or {} .. '"' or "nil")
-		.. '"\n}'
+		.. '",\n\tlines = {'
+		.. (function()
+			local text = ""
+			local lines = self:get_lines()
+			for i, line in ipairs(lines) do
+				if line then
+					text = text
+						.. '"'
+						.. line:gsub("\\", "\\\\")
+							:gsub("\n", "\\n")
+							:gsub("\r", "\\r")
+							:gsub("\t", "\\t")
+							:gsub('"', '\\"')
+						.. '"'
+						.. (i ~= #lines and ", " or "")
+				end
+			end
+			return text
+		end)()
+		.. "}"
 end
 
 return Section
