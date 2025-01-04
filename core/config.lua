@@ -1,5 +1,4 @@
 local validate = require("core.validate")
-local utils = require("core.utils")
 local default_config = require("core.defaults.config")
 require("core.context")
 
@@ -11,7 +10,9 @@ require("core.context")
 ---@field transform_lines (fun(section: Section, context: Context): string[])|nil
 ---@field resolve_reference (fun(section: Section, context: Context): string|boolean)|nil
 ---@field retry_count number?
----@field resolve_collision (fun(path: Path, section: Section, context: Context, retry_count: number): Path?)|nil
+---@field local_retry_count number?
+---@field resolve_collision (fun(path: Path, section: Section, context: Context, retry_count: number): Path)|nil
+---@field allow_local_overwrite boolean?
 ---@field allow_overwrite boolean?
 ---@field allow_makedir boolean?
 
@@ -21,7 +22,9 @@ require("core.context")
 ---@field transform_lines fun(section: Section, context: Context): string[]
 ---@field resolve_reference fun(section: Section, context: Context): string|boolean
 ---@field retry_count number
----@field resolve_collision fun(path: Path, section: Section, context: Context, retry_count: number): Path?
+---@field local_retry_count number
+---@field resolve_collision fun(path: Path, section: Section, context: Context, retry_count: number): Path
+---@field allow_local_overwrite boolean
 ---@field allow_overwrite boolean
 ---@field allow_makedir boolean
 Config = {}
@@ -53,8 +56,10 @@ function Config:new(config_table)
 		{ config_table.transform_lines, "function?", "transform_lines" },
 		{ config_table.resolve_reference, "function?", "resolve_reference" },
 		{ config_table.retry_count, "number?", "retry_count" },
+		{ config_table.local_retry_count, "number?", "local_retry_count" },
 		{ config_table.resolve_collision, "function?", "resolve_collision" },
 		{ config_table.allow_overwrite, "boolean?", "allow_overwrite" },
+		{ config_table.allow_local_overwrite, "boolean?", "allow_local_overwrite" },
 		{ config_table.allow_makedir, "boolean?", "allow_makedir" },
 	})
 	if err then
@@ -65,7 +70,7 @@ function Config:new(config_table)
 		local curr_string = "config_table.note_schema[" .. i .. "]"
 		if #note_type < 3 then
 			return nil,
-			Config.errors.missing_item_in_note_schema_list(note_type, i)
+				Config.errors.missing_item_in_note_schema_list(note_type, i)
 		end
 		err = validate.types("Config:new", {
 			{ note_type[1], "string", curr_string .. "[1]" },
@@ -83,6 +88,8 @@ function Config:new(config_table)
 	self.resolve_reference = config_table.resolve_reference
 		or default_config.resolve_reference
 	self.retry_count = config_table.retry_count or default_config.retry_count
+	self.local_retry_count = config_table.local_retry_count
+		or default_config.local_retry_count
 	self.resolve_collision = config_table.resolve_collision
 		or default_config.resolve_collision
 	self.allow_overwrite = (function()
@@ -90,6 +97,12 @@ function Config:new(config_table)
 			return default_config.allow_overwrite
 		end
 		return config_table.allow_overwrite
+	end)()
+	self.allow_local_overwrite = (function()
+		if config_table.allow_local_overwrite == nil then
+			return default_config.allow_local_overwrite
+		end
+		return config_table.allow_local_overwrite
 	end)()
 	self.allow_makedir = (function()
 		if config_table.allow_makedir == nil then

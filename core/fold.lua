@@ -25,9 +25,12 @@ M.errors = {
 
 	---@param retry_count number
 	---@param section Section?
+	---@param is_local boolean?
 	---@return string
-	maximum_retry_count = function(retry_count, section)
-		return "Maximum retry count of "
+	maximum_retry_count = function(retry_count, section, is_local)
+		return "Maximum "
+			.. (is_local and "local " or "")
+			.. "retry count of "
 			.. retry_count
 			.. " reached: "
 			.. (tostring(section) or "nil")
@@ -55,7 +58,7 @@ M.errors = {
 ---@return Section?, string?
 M.parse = function(ctx)
 	local section, err =
-		Section:new(0, utils.read_only({ "ROOT" }), ctx, 0, #ctx.lines, {}, nil)
+		Section:new(0, utils.read_only({ "ROOT" }), ctx, 1, #ctx.lines, {}, nil)
 	local id = 1
 	local root = section
 	if not section then
@@ -127,6 +130,9 @@ end
 ---@param ctx Context
 ---@return nil, string?
 M.prepare = function(section_root, ctx)
+	---@type { [string]: Section }
+	local created_files = {}
+
 	local _, err = traverse.preorder(section_root, function(section)
 		if section.type[1] == "ROOT" then
 			section.path = ctx.dest_path
@@ -138,10 +144,32 @@ M.prepare = function(section_root, ctx)
 			utils.read_only(ctx)
 		)
 
-		local err = validate.are_instances(
-			"config.resolve_directory",
-			{ { path, Path } }
-		)
+		local err =
+			validate.are_instances("config.resolve_path", { { path, Path } })
+		local original_path = path:copy()
+
+		local retries = 0
+		while not path:is_void() and created_files[tostring(path)] do
+			if ctx.config.allow_local_overwrite then
+				created_files[tostring(path)].path = Path:void()
+				break
+			end
+			section.path = path
+			if retries >= ctx.config.local_retry_count then
+				return nil, M.errors.maximum_retry_count(retries, section, true)
+			end
+			retries = retries + 1
+			path = ctx.config.resolve_collision(
+				original_path:copy(),
+				section,
+				ctx,
+				retries
+			)
+		end
+		if not path:is_void() then
+			created_files[tostring(path)] = section
+		end
+
 		if err then
 			return nil, err
 		end
@@ -149,7 +177,7 @@ M.prepare = function(section_root, ctx)
 		section.path = path
 	end)
 	if err then
-		return _, err
+		return nil, err
 	end
 
 	_, err = traverse.postorder(section_root, function(section)
@@ -281,7 +309,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 
 	local _, err = traverse.preorder(section_root, function(section)
 		local original_path = section.path:copy()
-		local retry_count = 0
+		local retries = 0
 		local write_handle
 		local full_path = tostring(section.path) or ""
 		local is_overwrite = false
@@ -307,15 +335,15 @@ M.execute = function(section_root, ctx, is_dry_run)
 					break
 				end
 			end
-			retry_count = retry_count + 1
-			if retry_count > ctx.config.retry_count then
+			retries = retries + 1
+			if retries > ctx.config.retry_count then
 				break
 			end
 			local path = ctx.config.resolve_collision(
 				original_path:copy(),
 				section,
 				ctx,
-				retry_count
+				retries
 			)
 			--- TODO(gitpushjoe): remove this assert
 			rename_action = Action.rename(original_path, assert(path))
@@ -327,7 +355,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 			return
 		end
 
-		if retry_count > ctx.config.retry_count then
+		if retries > ctx.config.retry_count then
 			return nil,
 				M.errors.maximum_retry_count(ctx.config.retry_count, section)
 		end

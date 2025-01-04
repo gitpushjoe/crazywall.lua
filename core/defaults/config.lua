@@ -42,13 +42,23 @@ local default_config = {
 	end,
 
 	resolve_collision = function(path, _, _, retry_count)
-		path:set_filename(path:get_filename() .. " (" .. retry_count .. ")")
+		local filename = path:get_filename()
+		local name, extension = filename:match("^(.*)%.(.*)$")
+		if name and extension then
+			path:set_filename(name .. " (" .. retry_count .. ")." .. extension)
+			return path
+		end
+		path:set_filename(filename .. " (" .. retry_count .. ")")
 		return path
 	end,
 
 	retry_count = 0,
 
+	local_retry_count = 1,
+
 	allow_makedir = true,
+
+	allow_local_overwrite = false,
 
 	allow_overwrite = false,
 }

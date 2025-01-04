@@ -45,7 +45,11 @@ local make_simple_config = function()
 		resolve_reference = function(section)
 			return assert(section.path:get_filename():gsub(".txt", ""))
 		end,
+
 		allow_makedir = false,
+		allow_overwrite = false,
+		local_retry_count = 0,
+		retry_count = 0,
 	}))
 end
 
@@ -66,10 +70,23 @@ local make_simple_ctx = function(config, mock_filesystem)
 	)
 end
 
-local do_fold = function(ctx)
-	local root = assert(fold.parse(ctx))
-	assert(fold.prepare(root, ctx) == nil)
-	assert(fold.execute(root, ctx, false))
+---@param ctx Context
+---@param is_dry_run boolean?
+local do_fold = function(ctx, is_dry_run)
+	local root, err = assert(fold.parse(ctx))
+	if err then
+		return nil, err
+	end
+	_, err = fold.prepare(root, ctx)
+	if err then
+		return nil, err
+	end
+	local plan
+	plan, err = fold.execute(root, ctx, is_dry_run or false)
+	if err then
+		return nil, err
+	end
+	return true
 end
 
 TEST_Config["(simple)"] = function()
@@ -77,10 +94,10 @@ TEST_Config["(simple)"] = function()
 	local mock_filesystem = make_simple_filesystem()
 	local ctx = make_simple_ctx(config, mock_filesystem)
 
-	do_fold(ctx)
+	assert(do_fold(ctx))
 
 	local expected_filesystem = make_simple_expected_filesystem()
-	Suite.expect_equal(tostring(expected_filesystem), tostring(mock_filesystem))
+	Suite.expect_equal(tostring(mock_filesystem), tostring(expected_filesystem))
 end
 
 TEST_Config["(note_schema priority)"] = function()
@@ -91,13 +108,13 @@ TEST_Config["(note_schema priority)"] = function()
 		"{foo}\n(bar)\n<baz>\n{{foo2}}"
 	local ctx = make_simple_ctx(config, mock_filesystem)
 
-	do_fold(ctx)
+	assert(do_fold(ctx))
 
 	local expected_filesystem = make_simple_expected_filesystem()
 	local directory = expected_filesystem.table.home.tests
 	directory["note.txt"] = directory["note.txt"] .. "\n2xcurly foo2"
 	directory["2xcurly foo2.txt"] = "foo2"
-	Suite.expect_equal(tostring(expected_filesystem), tostring(mock_filesystem))
+	Suite.expect_equal(tostring(mock_filesystem), tostring(expected_filesystem))
 end
 
 TEST_Config["(indents)"] = function()
@@ -115,7 +132,7 @@ TEST_Config["(indents)"] = function()
 ]]
 	local ctx = make_simple_ctx(config, mock_filesystem)
 
-	do_fold(ctx)
+	assert(do_fold(ctx))
 
 	local expected_filesystem = MockFilesystem:new({
 		home = {
@@ -130,7 +147,7 @@ TEST_Config["(indents)"] = function()
 			},
 		},
 	})
-	Suite.expect_equal(tostring(expected_filesystem), tostring(mock_filesystem))
+	Suite.expect_equal(tostring(mock_filesystem), tostring(expected_filesystem))
 end
 
 TEST_Config["(resolve_reference returns false)"] = function()
@@ -144,16 +161,15 @@ TEST_Config["(resolve_reference returns false)"] = function()
 	local mock_filesystem = make_simple_filesystem()
 	local ctx = make_simple_ctx(config, mock_filesystem)
 
-	do_fold(ctx)
+	assert(do_fold(ctx))
 
 	local expected_filesystem = make_simple_expected_filesystem()
 	expected_filesystem.table.home.tests["note.txt"] = "curly foo\nangle baz"
-	Suite.expect_equal(tostring(expected_filesystem), tostring(mock_filesystem))
+	Suite.expect_equal(tostring(mock_filesystem), tostring(expected_filesystem))
 end
 
 TEST_Config["allow_makedir"] = function()
 	local config = make_simple_config()
-	config.allow_makedir = true
 	config.resolve_path = function(section, ctx)
 		local path = ctx.src_path:copy()
 		local first_line = section:get_lines()[1]
@@ -167,7 +183,10 @@ TEST_Config["allow_makedir"] = function()
 	local mock_filesystem = make_simple_filesystem()
 	local ctx = make_simple_ctx(config, mock_filesystem)
 
-	do_fold(ctx)
+	assert(not do_fold(ctx, true))
+	config.allow_makedir = true
+	ctx = make_simple_ctx(config, mock_filesystem)
+	assert(do_fold(ctx))
 
 	local expected_filesystem = MockFilesystem:new({
 		home = {
@@ -179,13 +198,12 @@ TEST_Config["allow_makedir"] = function()
 			},
 		},
 	})
-	Suite.expect_equal(tostring(expected_filesystem), tostring(mock_filesystem))
+	Suite.expect_equal(tostring(mock_filesystem), tostring(expected_filesystem))
 end
 
-TEST_Config["resolve_collision"] = function()
+TEST_Config["local_retry_count"] = function()
 	local config = make_simple_config()
-	config.retry_count = 2
-	local mock_filesystem = make_simple_filesystem()
+	config.local_retry_count = 1
 	config.resolve_path = function(_, context)
 		local path = context.src_path:copy()
 		path:set_filename("foo.txt")
@@ -194,32 +212,66 @@ TEST_Config["resolve_collision"] = function()
 	config.resolve_reference = function()
 		return false
 	end
-	config.resolve_collision = function(path, _, _, retry_count)
-		path:set_filename("foo " .. retry_count .. ".txt")
-		return path
-	end
+	local mock_filesystem = make_simple_filesystem()
 	local ctx = make_simple_ctx(config, mock_filesystem)
 
-	do_fold(ctx)
+	assert(not do_fold(ctx, true))
+	config.local_retry_count = 2
+	assert(do_fold(ctx))
 
 	local expected_filesystem = MockFilesystem:new({
 		home = {
 			tests = {
 				["note.txt"] = "",
 				["foo.txt"] = "foo",
-				["foo 1.txt"] = "bar",
-				["foo 2.txt"] = "baz",
+				["foo (1).txt"] = "bar",
+				["foo (2).txt"] = "baz",
 			},
 		},
 	})
-	Suite.expect_equal(tostring(expected_filesystem), tostring(mock_filesystem))
+	Suite.expect_equal(tostring(mock_filesystem), tostring(expected_filesystem))
+end
+
+TEST_Config["retry_count"] = function()
+	local config = make_simple_config()
+	config.retry_count = 0
+	local mock_filesystem = make_simple_filesystem()
+	mock_filesystem.table.home.tests["curly foo.txt"] = "foo"
+	mock_filesystem.table.home.tests["paren bar.txt"] = "bar"
+	mock_filesystem.table.home.tests["angle baz.txt"] = "baz"
+	local ctx = make_simple_ctx(config, mock_filesystem)
+
+	assert(not do_fold(ctx, true))
+	config.retry_count = 2
+	ctx = make_simple_ctx(config, mock_filesystem)
+	assert(do_fold(ctx))
+
+	local expected_filesystem = make_simple_expected_filesystem()
+	expected_filesystem.table.home.tests["curly foo (1).txt"] = "foo"
+	expected_filesystem.table.home.tests["paren bar (1).txt"] = "bar"
+	expected_filesystem.table.home.tests["angle baz (1).txt"] = "baz"
+	Suite.expect_equal(tostring(mock_filesystem), tostring(expected_filesystem))
 end
 
 TEST_Config["allow_overwrite"] = function()
 	local config = make_simple_config()
 	config.allow_overwrite = true
-	config.resolve_path = function(_, ctx)
-		local path = ctx.src_path:copy()
+	local mock_filesystem = make_simple_filesystem()
+	mock_filesystem.table.home.tests["curly foo.txt"] = "will be overwritten"
+	mock_filesystem.table.home.tests["paren bar.txt"] = "will be overwritten"
+	mock_filesystem.table.home.tests["angle baz.txt"] = "will be overwritten"
+	local ctx = make_simple_ctx(config, mock_filesystem)
+
+	assert(do_fold(ctx))
+
+	local expected_filesystem = make_simple_expected_filesystem()
+	Suite.expect_equal(tostring(mock_filesystem), tostring(expected_filesystem))
+end
+
+TEST_Config["allow_local_overwrite"] = function()
+	local config = make_simple_config()
+	config.resolve_path = function(_, context)
+		local path = context.src_path:copy()
 		path:set_filename("foo.txt")
 		return path
 	end
@@ -229,7 +281,9 @@ TEST_Config["allow_overwrite"] = function()
 	local mock_filesystem = make_simple_filesystem()
 	local ctx = make_simple_ctx(config, mock_filesystem)
 
-	do_fold(ctx)
+	assert(not do_fold(ctx, true))
+	config.allow_local_overwrite = true
+	assert(do_fold(ctx))
 
 	local expected_filesystem = MockFilesystem:new({
 		home = {
@@ -239,7 +293,7 @@ TEST_Config["allow_overwrite"] = function()
 			},
 		},
 	})
-	Suite.expect_equal(tostring(expected_filesystem), tostring(mock_filesystem))
+	Suite.expect_equal(tostring(mock_filesystem), tostring(expected_filesystem))
 end
 
 TEST_Config["errors.missing_item_in_note_schema_list"] = function()

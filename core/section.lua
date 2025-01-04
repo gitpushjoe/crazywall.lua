@@ -122,9 +122,9 @@ function Section:__tostring()
 		.. ", end_line = "
 		.. (self.parent and self.parent.end_line or "nil")
 		.. "}"
-		.. ',\n\tpath = "'
-		.. (tostring(self.path) or "nil")
-		.. '",\n\tlines = {'
+		.. ",\n\tpath = "
+		.. (self.path and ('"' .. tostring(self.path) .. '"') or "nil")
+		.. ",\n\tlines = {"
 		.. (function()
 			local text = ""
 			local lines = self:get_lines()

@@ -122,7 +122,7 @@ end
 function Path:__tostring()
 	local out = ""
 	for i, part in ipairs(self.parts) do
-		out = out .. part .. (i ~= #self.parts and "/" or "")
+		out = out .. part:gsub("/", "") .. (i ~= #self.parts and "/" or "")
 	end
 	return out
 end

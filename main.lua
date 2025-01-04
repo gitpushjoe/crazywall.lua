@@ -200,7 +200,7 @@ if not ctx.auto_confirm then
 	io.write("Confirm? [Y/N]: ")
 	---@type string
 	local result = io.read()
-	if result:sub(1, 1):lower() ~= "y" then
+	if not result or result:sub(1, 1):lower() ~= "y" then
 		print("Exiting.")
 		os.exit(0)
 	end
