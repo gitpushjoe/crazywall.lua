@@ -22,6 +22,23 @@ Context = {}
 Context.__index = Context
 Context.__name = "Context"
 
+Context.errors = {
+
+	---@param value number
+	invalid_value_for_plan_stream = function(value)
+		return "Invalid plan_stream value "
+			.. value
+			.. " passed to Config:new()"
+	end,
+
+	---@param value number
+	invalid_value_for_text_stream = function(value)
+		return "Invalid text_stream value "
+			.. value
+			.. " passed to Config:new()"
+	end,
+}
+
 ---@param config Config
 ---@param src_path string
 ---@param dest_path string
@@ -77,15 +94,20 @@ function Context:new(
 	end
 
 	--- TODO(gitpushjoe): add error message
-	assert(
-		(plan_stream == streams.NONE
-			or plan_stream == streams.STDOUT
-			or plan_stream == streams.STDERR)
-		and
-		(text_stream == streams.NONE
-		or text_stream == streams.STDOUT
-		or text_stream == streams.STDERR)
-	)
+	if
+		plan_stream ~= streams.NONE
+		and plan_stream ~= streams.STDOUT
+		and plan_stream ~= streams.STDERR
+	then
+		return nil, Context.errors.invalid_value_for_plan_stream(plan_stream)
+	end
+	if
+		text_stream ~= streams.NONE
+		and text_stream ~= streams.STDOUT
+		and text_stream ~= streams.STDERR
+	then
+		return nil, Context.errors.invalid_value_for_text_stream(plan_stream)
+	end
 
 	self.lines = {}
 	self.io = mock_filesystem and mock_filesystem.io or io

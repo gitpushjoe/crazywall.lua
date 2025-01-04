@@ -153,6 +153,7 @@ ctx, err = Context:new(
 	nil,
 	parser:find("--dry-run") ~= nil,
 	parser:find("--yes") ~= nil,
+	--- TODO(gitpushjoe): add nil-checking here
 	math.tointeger(parser:find("--plan-stream")) or streams.STDOUT,
 	math.tointeger(parser:find("--text-stream")) or streams.STDOUT,
 	parser:find("--preserve") ~= nil
