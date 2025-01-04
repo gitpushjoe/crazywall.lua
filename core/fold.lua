@@ -7,6 +7,7 @@ local Plan = require("core.plan.plan")
 local Action = require("core.plan.action")
 
 local M = {}
+M.__name = "fold"
 
 M.errors = {
 
@@ -279,6 +280,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 	end
 
 	local _, err = traverse.preorder(section_root, function(section)
+		local original_path = section.path:copy()
 		local retry_count = 0
 		local write_handle
 		local full_path = tostring(section.path) or ""
@@ -289,7 +291,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 			return
 		end
 
-		while retry_count <= ctx.config.retry_count do
+		while true do
 			if section.type[1] == "ROOT" then
 				is_overwrite = ctx.src_path == ctx.dest_path
 				break
@@ -309,7 +311,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 				break
 			end
 			local path = ctx.config.resolve_collision(
-				section.path,
+				original_path,
 				section,
 				ctx,
 				retry_count

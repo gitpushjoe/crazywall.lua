@@ -5,13 +5,13 @@ require("core.path")
 local MockFS_IO = require("core.mock_filesystem.io")
 
 ---@class MockFilesystem
----@field table MockFile
+---@field table table
 ---@field io iolib
 MockFilesystem = {}
 MockFilesystem.__index = MockFilesystem
 MockFilesystem.__name = "MockFilesystem"
 
---- @param table MockFile
+--- @param table table
 --- @return MockFilesystem
 function MockFilesystem:new(table)
 	self = {}
@@ -31,9 +31,14 @@ function MockFilesystem:__tostring()
 	local function print_elem(path, elem, filename)
 		if type(elem) == type({}) then
 			path:push_directory(filename)
-			for name, child in pairs(elem) do
+			local keys = {}
+			for name in pairs(elem) do
+				table.insert(keys, name)
+			end
+			table.sort(keys)
+			for _, name in ipairs(keys) do
 				local p = path:copy()
-				print_elem(p, child, name)
+				print_elem(p, elem[name], name)
 			end
 			out = out .. "(directory) " .. tostring(path) .. "\n"
 			return

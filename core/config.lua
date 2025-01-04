@@ -28,7 +28,7 @@ Config = {}
 Config.__index = Config
 Config.__name = "Config"
 
-Config.errors = utils.read_only({
+Config.errors = {
 
 	---@param list table
 	---@return string
@@ -39,7 +39,7 @@ Config.errors = utils.read_only({
 			.. idx
 			.. "]."
 	end,
-})
+}
 
 ---@param config_table PartialConfigTable
 ---@return Config?, string?
@@ -63,6 +63,10 @@ function Config:new(config_table)
 	local note_schema = config_table.note_schema or default_config.note_schema
 	for i, note_type in ipairs(note_schema) do
 		local curr_string = "config_table.note_schema[" .. i .. "]"
+		if #note_type < 3 then
+			return nil,
+			Config.errors.missing_item_in_note_schema_list(note_type, i)
+		end
 		err = validate.types("Config:new", {
 			{ note_type[1], "string", curr_string .. "[1]" },
 			{ note_type[2], "string", curr_string .. "[2]" },
@@ -70,10 +74,6 @@ function Config:new(config_table)
 		})
 		if err then
 			return nil, err
-		end
-		if #note_type < 3 then
-			return nil,
-				Config.errors.missing_item_in_note_schema_list(note_type, i)
 		end
 	end
 	self.note_schema = note_schema
@@ -85,10 +85,18 @@ function Config:new(config_table)
 	self.retry_count = config_table.retry_count or default_config.retry_count
 	self.resolve_collision = config_table.resolve_collision
 		or default_config.resolve_collision
-	self.allow_overwrite = config_table.allow_overwrite
-		or default_config.allow_overwrite
-	self.allow_makedir = config_table.allow_makedir
-		or default_config.allow_makedir
+	self.allow_overwrite = (function()
+		if config_table.allow_overwrite == nil then
+			return default_config.allow_overwrite
+		end
+		return config_table.allow_overwrite
+	end)()
+	self.allow_makedir = (function()
+		if config_table.allow_makedir == nil then
+			return default_config.allow_makedir
+		end
+		return config_table.allow_makedir
+	end)()
 	return self
 end
 
