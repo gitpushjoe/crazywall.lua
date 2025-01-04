@@ -5,8 +5,9 @@ require("core.path")
 ---@alias OVERWRITE_ACTION { type: "OVERWRITE", path: Path, lines: string[], tostring: fun(self: OVERWRITE_ACTION): string }
 ---@alias MKDIR_ACTION { type: "MKDIR", path: Path, tostring: fun(self: MKDIR_ACTION): string }
 ---@alias IGNORE_ACTION { type: "IGNORE", path: Path, lines: string[], tostring: fun(self: IGNORE_ACTION): string }
+---@alias RENAME_ACTION { type: "RENAME", path: Path, new_path: Path }
 
----@alias Action CREATE_ACTION|OVERWRITE_ACTION|MKDIR_ACTION|IGNORE_ACTION
+---@alias Action CREATE_ACTION|OVERWRITE_ACTION|MKDIR_ACTION|IGNORE_ACTION|RENAME_ACTION
 
 local M = {}
 
@@ -14,14 +15,16 @@ M.CREATE = "CREATE"
 M.OVERWRITE = "OVERWRITE"
 M.MKDIR = "MKDIR"
 M.IGNORE = "IGNORE"
+M.RENAME = "RENAME"
 
 -- TODO(gitpushjoe): add option for no colors
 ---@param self Action
 local tostring = function(self)
-	local text = self.type == "CREATE" and "\27[32m"
-		or self.type == "MKDIR" and "\27[33m"
-		or self.type == "OVERWRITE" and "\27[35m"
-		or self.type == "IGNORE" and "\27[31m"
+	local text = self.type == M.CREATE and "\27[32m"
+		or self.type == M.MKDIR and "\27[33m"
+		or self.type == M.OVERWRITE and "\27[35m"
+		or self.type == M.IGNORE and "\27[31m"
+		or self.type == M.RENAME and "\27[96m"
 		or error("Unknown action type: " .. self.type)
 	text = text
 		.. "[ "
@@ -46,6 +49,10 @@ local tostring = function(self)
 		.. char_count_str
 		.. "  "
 		.. tostring(self.path)
+		.. (self.type == M.RENAME and "\n" .. string.rep(
+			" ",
+			#"action         lines   chars   " - #"->  "
+		) .. "->  " .. tostring(self.new_path) or "")
 		.. "\27[0m"
 end
 
@@ -115,6 +122,20 @@ function M.ignore(lines)
 		type = M.IGNORE,
 		path = Path.void(),
 		lines = corrected_lines,
+		tostring = tostring,
+	}
+	return utils.read_only(action)
+end
+
+---@param original_path Path
+---@param new_path Path
+---@return RENAME_ACTION
+function M.rename(original_path, new_path)
+	---@type RENAME_ACTION
+	local action = {
+		type = M.RENAME,
+		path = original_path,
+		new_path = new_path,
 		tostring = tostring,
 	}
 	return utils.read_only(action)

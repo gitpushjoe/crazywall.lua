@@ -285,6 +285,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 		local write_handle
 		local full_path = tostring(section.path) or ""
 		local is_overwrite = false
+		local rename_action = nil
 
 		if section.path:is_void() then
 			plan:add(Action.ignore(section.lines))
@@ -311,11 +312,13 @@ M.execute = function(section_root, ctx, is_dry_run)
 				break
 			end
 			local path = ctx.config.resolve_collision(
-				original_path,
+				original_path:copy(),
 				section,
 				ctx,
 				retry_count
 			)
+			--- TODO(gitpushjoe): remove this assert
+			rename_action = Action.rename(original_path, assert(path))
 			section.path = path
 			full_path = tostring(section.path) or ""
 		end
@@ -328,6 +331,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 			return nil,
 				M.errors.maximum_retry_count(ctx.config.retry_count, section)
 		end
+		plan:add(rename_action)
 		write_handle = write_handle or get_write_handle(full_path)
 
 		if write_handle then

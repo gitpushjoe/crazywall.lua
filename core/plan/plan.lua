@@ -16,7 +16,7 @@ function Plan:new()
 	return self
 end
 
----@param action Action
+---@param action Action?
 ---@return Plan
 function Plan:add(action)
 	table.insert(self.actions, action)
