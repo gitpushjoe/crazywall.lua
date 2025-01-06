@@ -29,8 +29,8 @@ Here:
 [!h2]
 
 #### {question}
-What is the importance of the energy of the system? [!h4]
-
+What is the importance of the energy of the system?
+[!h4]
 ## Quantum States
 
 - **Wave Function**

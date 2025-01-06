@@ -26,7 +26,7 @@ local default_config = {
 		--- of the path of the source file.
 		--- If the parent path is void (see Path:is_void()), then this will be
 		--- nil.
-		local path = ((section.parent and section.parent.path) or ctx.src_path):directory()
+		local path = section.parent.path:directory()
 
 		--- If the parent path should be ignored, then set this section to be
 		--- ignored as well.
@@ -62,18 +62,39 @@ local default_config = {
 	end,
 
 	transform_lines = function(section)
-		--- Remove whitespace from the first line of the section, before saving
-		--- it to another file.
+		--- Remove whitespace from the first line of the section.
 		local lines = section:get_lines()
 		lines[1] = utils.str.trim(lines[1])
+
+		--- Then, add the open tag (the "#"s) back to the start of the first 
+		--- line.
+		lines[1] = section:prefix() .. lines[1]
 		return lines
 	end,
 
 	resolve_reference = function(section)
-		--- Set the reference for the section to the filename surrounded by
-		--- "[[" and "]]". Note that Path:get_filename() returns "" when
-		--- path:is_void().
-		return "[[" .. assert(section.path):get_filename() .. "]]"
+		--- If the section isn't being saved to a file, then delete all lines
+		--- corresponding to the section, and don't add a reference to the
+		--- source file.
+		if section.path:is_void() then
+			return false
+		end
+
+		--- If the filename is just "_index.md", use the name of the directory
+		--- as the reference instead of "_index.md". Otherwise, just use the
+		--- filename.
+		local filename = section.path:get_filename()
+		if filename == "_index.md" then
+			filename = section.path.parts[#section.path.parts - 1]
+		end
+
+		--- If the section open tag starts with a bullet point ("-"), then also
+		--- add it to the reference.
+		if utils.str.starts_with(section.type[2], "-") then
+			return "- [[" .. filename .. "]]"
+		end
+
+		return "[[" .. filename .. "]]"
 	end,
 
 	resolve_collision = function(path, _, _, retry_count)
