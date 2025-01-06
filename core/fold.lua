@@ -57,19 +57,19 @@ M.errors = {
 ---@param ctx Context
 ---@return Section?, string?
 M.parse = function(ctx)
-	local section, err =
+	local curr_section, err =
 		Section:new(0, utils.read_only({ "ROOT" }), ctx, 1, #ctx.lines, {}, nil)
 	local id = 1
-	local root = section
-	if not section then
+	local root = curr_section
+	if not curr_section then
 		return nil, err
 	end
 	local config = ctx.config
 	local note_schema = config.note_schema
 	for i, line in ipairs(ctx.lines) do
 		---@cast line string
-		if section ~= nil and #section.indent > 0 then
-			local indent = section.indent
+		if curr_section ~= nil and #curr_section.indent > 0 then
+			local indent = curr_section.indent
 			-- TODO(gitpushjoe): maybe ignoring empty lines should be config option?
 			if #line ~= 0 and not str.starts_with(line, indent) then
 				return nil, M.errors.inconsistent_indent(i)
@@ -90,40 +90,40 @@ M.parse = function(ctx)
 		for note_idx, note_type in ipairs(note_schema) do
 			local prefix = note_type[2]
 			if str.starts_with(line, prefix) then
-				local curr
-				curr, err = Section:new(
+				local new_section
+				new_section, err = Section:new(
 					id,
 					utils.read_only(config.note_schema[note_idx]),
 					ctx,
 					i,
 					nil,
 					{},
-					section,
+					curr_section,
 					indent
 				)
 				id = id + 1
-				if not curr then
+				if not new_section then
 					return nil, err
 				end
-				table.insert(section.children, curr)
-				section = curr
+				table.insert(curr_section.children, new_section)
+				curr_section = new_section
 				break
 			end
 		end
 		-- TODO(gitpushjoe): maybe still check if a suffix for another note type slipped through?
 		if
-			section
-			and section.type[1] ~= "ROOT"
-			and str.ends_with(line, section:suffix())
+			curr_section
+			and curr_section.type[1] ~= "ROOT"
+			and str.ends_with(line, curr_section:suffix())
 		then
-			section.end_line = i
-			section = section.parent
+			curr_section.end_line = i
+			curr_section = curr_section.parent
 		end
 	end
-	if section ~= root then
-		return nil, M.errors.unterminated_section(section)
+	if curr_section ~= root then
+		return nil, M.errors.unterminated_section(curr_section)
 	end
-	return section
+	return curr_section
 end
 
 ---@param section_root Section
@@ -161,8 +161,8 @@ M.prepare = function(section_root, ctx)
 			retries = retries + 1
 			path = ctx.config.resolve_collision(
 				original_path:copy(),
-				section,
-				ctx,
+				utils.read_only(section),
+				utils.read_only(ctx),
 				retries
 			)
 		end
@@ -265,7 +265,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 			end
 			return utils.str.ends_with(err or "", "directory") and {} or nil
 		end
-		return io.open(path_str or "", is_dry_run and "a" or "w")
+		return io.open(path_str or "", "w")
 	end
 
 	---@param handle file*?

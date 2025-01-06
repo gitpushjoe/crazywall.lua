@@ -94,7 +94,7 @@ local parser = assert(Parser:new({
 	{
 		"--out <file>",
 		"-o <file>",
-		"Sets the destination for the new source file text to <file>. Defaults to the path to the source file. Set to 1 for stdout and 2 for stderr.",
+		"Sets the destination for the new source file text to <file>. Defaults to the path to the source file.",
 	},
 	{
 		"--config <config>",

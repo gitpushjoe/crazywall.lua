@@ -3,9 +3,11 @@ local utils = require("core.utils")
 ---@type Config
 local default_config = {
 
-	--- The first section to try to match against is named "h1", and should
-	--- begin with "# "and end with "[!h1]" (possibly on the same line), and
-	--- so on.
+	--- Look for a line in the source file that begins with "# " and continue
+	--- until you find a line ending with "[!h1]". Everything within those
+	--- lines will be put in a Section object, and doing section:type() will
+	--- return { "h1", "# ", "[!h1]" }. The same goes for all of the other
+	--- items in `note_schema`.
 	note_schema = {
 		{ "h1", "# ", "[!h1]" },
 		{ "h2", "## ", "[!h2]" },

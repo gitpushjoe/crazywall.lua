@@ -2,7 +2,7 @@ local validate = require("core.validate")
 local default_config = require("core.defaults.config")
 require("core.context")
 
----@alias NoteSchema [string, string][]
+---@alias NoteSchema [string, string, string][]
 
 ---@class (exact) PartialConfigTable
 ---@field note_schema NoteSchema?

@@ -6,7 +6,6 @@ local configs = {
 	DEFAULT = {
 		--- Your config goes here.
 	},
-
 }
 
 return configs

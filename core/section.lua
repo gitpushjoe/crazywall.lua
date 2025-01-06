@@ -5,7 +5,7 @@ require("core.context")
 
 ---@class Section
 ---@field id number
----@field type [string, string]
+---@field type [string, string, string]
 ---@field context Context
 ---@field start_line number
 ---@field end_line number?
@@ -19,7 +19,7 @@ Section.__index = Section
 Section.__name = "Section"
 
 ---@param id number
----@param type [string, string]
+---@param type [string, string, string]
 ---@param context Context
 ---@param start_line number
 ---@param end_line number?
