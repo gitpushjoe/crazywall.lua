@@ -52,6 +52,11 @@ M.errors = {
 			.. "\nError: "
 			.. (err or "")
 	end,
+
+	---@param path string
+	expected_file_to_be_writable = function(path)
+		return "Expected file " .. tostring(path) .. " to be writable"
+	end,
 }
 
 ---@param ctx Context
@@ -260,8 +265,9 @@ M.execute = function(section_root, ctx, is_dry_run)
 				return nil
 			end
 			local file, err = io.open(tostring(directory), "w")
+			--- shouldn't be necessary
 			if file then
-				error("TODO(gitpushjoe): unexpected error")
+				file:close()
 			end
 			return utils.str.ends_with(err or "", "directory") and {} or nil
 		end
@@ -272,14 +278,16 @@ M.execute = function(section_root, ctx, is_dry_run)
 	---@param lines string[]
 	---@param path Path
 	---@param is_overwrite boolean?
-	---@return nil
+	---@return string?
 	local function write(handle, lines, path, is_overwrite)
 		is_overwrite = is_overwrite or false
 		created_or_modified_paths[tostring(path)] = 1
 		if not is_dry_run and handle then
-			-- TODO(gitpushjoe): handle possibility of write failure
-			handle:write(str.join_lines(lines))
+			local _, err = handle:write(str.join_lines(lines))
 			handle:close()
+			if err then
+				return err
+			end
 		end
 		plan:add(
 			(is_overwrite and Action.overwrite or Action.create)(path, lines)
@@ -310,10 +318,10 @@ M.execute = function(section_root, ctx, is_dry_run)
 	local _, err = traverse.preorder(section_root, function(section)
 		local original_path = section.path:copy()
 		local retries = 0
-		local write_handle
 		local full_path = tostring(section.path) or ""
 		local is_overwrite = false
 		local rename_action = nil
+		local write_handle = nil
 
 		if section.path:is_void() then
 			plan:add(Action.ignore(section.lines))
@@ -345,8 +353,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 				ctx,
 				retries
 			)
-			--- TODO(gitpushjoe): remove this assert
-			rename_action = Action.rename(original_path, assert(path))
+			rename_action = Action.rename(original_path, path)
 			section.path = path
 			full_path = tostring(section.path) or ""
 		end
@@ -363,7 +370,11 @@ M.execute = function(section_root, ctx, is_dry_run)
 		write_handle = write_handle or get_write_handle(full_path)
 
 		if write_handle then
-			write(write_handle, section.lines, section.path, is_overwrite)
+			local err =
+				write(write_handle, section.lines, section.path, is_overwrite)
+			if err then
+				return nil, err
+			end
 			return
 		end
 
@@ -377,9 +388,12 @@ M.execute = function(section_root, ctx, is_dry_run)
 		end
 
 		write_handle = get_write_handle(full_path)
-		write(write_handle, section.lines, section.path, is_overwrite)
+		err = write(write_handle, section.lines, section.path, is_overwrite)
+		if err then
+			return nil, err
+		end
 
-		M.errors.cannot_write(full_path, section)
+		return nil, M.errors.cannot_write(full_path, section)
 	end)
 	if err then
 		return nil, err

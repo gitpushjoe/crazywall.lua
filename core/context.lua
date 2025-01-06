@@ -93,7 +93,6 @@ function Context:new(
 		return nil, err
 	end
 
-	--- TODO(gitpushjoe): add error message
 	if
 		plan_stream ~= streams.NONE
 		and plan_stream ~= streams.STDOUT

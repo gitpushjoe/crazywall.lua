@@ -19,13 +19,12 @@ local default_config = {
 		{ " - h4", "- #### ", "[!h4]" },
 	},
 
-	resolve_path = function(section, ctx)
-		--- If this section has a parent section, then config.resolve_path will
-		--- have been called on the parent already, so we can get the directory
-		--- that the parent will be saved to. Otherwise, we get the directory
-		--- of the path of the source file.
-		--- If the parent path is void (see Path:is_void()), then this will be
-		--- nil.
+	resolve_path = function(section)
+		--- Get the directory of the parent path. If this is the first section, 
+		--- then its parent will be the ROOT section, and this will be the
+		--- directory that the destination note will be saved to. (If 
+		--- `--preserve` is enabled, this will be the directory of the source
+		--- file.)
 		local path = section.parent.path:directory()
 
 		--- If the parent path should be ignored, then set this section to be

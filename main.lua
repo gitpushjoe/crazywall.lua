@@ -40,14 +40,6 @@ local error = function(err)
 	os.exit(1)
 end
 
----@param warning string?
-local warn = function(warning)
-	io.stderr:write(
-		"\27[1;33m" .. "Warning: \27[0;93m" .. (warning or "") .. "\n \27[0m"
-	)
-	os.exit(1)
-end
-
 ---@param text string
 ---@param stream Stream
 local print_to_stream = function(text, stream)
@@ -144,6 +136,15 @@ end
 
 local source_dir = tostring(assert(Path:new(filename):directory()))
 
+local plan_stream = math.tointeger(parser:find("--plan-stream"))
+if plan_stream == nil then
+	error("Plan stream value is invalid.")
+end
+local text_stream = math.tointeger(parser:find("--text-stream"))
+if text_stream == nil then
+	error("Text stream value is invalid.")
+end
+
 local ctx
 ctx, err = Context:new(
 	config,
@@ -153,9 +154,8 @@ ctx, err = Context:new(
 	nil,
 	parser:find("--dry-run") ~= nil,
 	parser:find("--yes") ~= nil,
-	--- TODO(gitpushjoe): add nil-checking here
-	math.tointeger(parser:find("--plan-stream")) or streams.STDOUT,
-	math.tointeger(parser:find("--text-stream")) or streams.STDOUT,
+	plan_stream or streams.STDOUT,
+	text_stream or streams.STDOUT,
 	parser:find("--preserve") ~= nil
 )
 
