@@ -151,6 +151,9 @@ M.prepare = function(section_root, ctx)
 
 		local err =
 			validate.are_instances("config.resolve_path", { { path, Path } })
+		if err then
+			return nil, err
+		end
 		local original_path = path:copy()
 
 		local retries = 0
@@ -392,8 +395,6 @@ M.execute = function(section_root, ctx, is_dry_run)
 		if err then
 			return nil, err
 		end
-
-		return nil, M.errors.cannot_write(full_path, section)
 	end)
 	if err then
 		return nil, err

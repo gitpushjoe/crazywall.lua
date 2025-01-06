@@ -20,11 +20,12 @@ local default_config = {
 	},
 
 	resolve_path = function(section)
-		--- Get the directory of the parent path. If this is the first section, 
+		--- Get the directory of the parent path. If this is the first section,
 		--- then its parent will be the ROOT section, and this will be the
-		--- directory that the destination note will be saved to. (If 
+		--- directory that the destination note will be saved to. (If
 		--- `--preserve` is enabled, this will be the directory of the source
 		--- file.)
+		--- Note that if the parent path is Path:void(), then this will be nil.
 		local path = section.parent.path:directory()
 
 		--- If the parent path should be ignored, then set this section to be
@@ -34,7 +35,7 @@ local default_config = {
 		end
 
 		--- Ignore this section if the first line starts with "{" and ends with
-		--- "}" (not including tags).
+		--- "}" (not including the open tag or indentation).
 		if
 			utils.str.starts_with(section:get_lines()[1], "{")
 			and utils.str.ends_with(section:get_lines()[1], "}")
@@ -52,6 +53,8 @@ local default_config = {
 		if #section.children > 0 then
 			path:push_directory(filename)
 			path:set_filename("_index.md")
+			--- The following code is equivalent:
+			-- path = assert(path:join(filename .. "/_index.md"))
 			return path
 		end
 
@@ -65,7 +68,7 @@ local default_config = {
 		local lines = section:get_lines()
 		lines[1] = utils.str.trim(lines[1])
 
-		--- Then, add the open tag (the "#"s) back to the start of the first 
+		--- Then, add the open tag (the "#"s) back to the start of the first
 		--- line.
 		lines[1] = section:prefix() .. lines[1]
 		return lines

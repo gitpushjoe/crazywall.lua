@@ -71,12 +71,33 @@ M.read_only = function(tbl)
 	local proxy = {}
 	local mt = {
 		__index = tbl,
-		__newindex = function()
-			error("attempt to update a read-only table", 2)
+		__newindex = function(self)
+			error(
+				(self.__name and (self.__name .. ": ") or "")
+					.. "attempt to update a read-only table",
+				2
+			)
 		end,
 	}
 	setmetatable(proxy, mt)
 	return proxy
+end
+
+---@param handle file*?
+---@return string?
+M.read_from_handle = function(handle)
+	if not handle then
+		return nil
+	end
+	local res = handle:read("*a")
+	handle:close()
+	res = res:sub(1, #res - 1)
+	return res
+end
+
+---@return string
+M.get_home_directory = function()
+	return assert(M.read_from_handle(io.popen("echo $HOME")) .. "/")
 end
 
 return M

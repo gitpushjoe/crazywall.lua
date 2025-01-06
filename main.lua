@@ -20,18 +20,6 @@ local Parser = require("core.parser")
 local streams = require("core.streams")
 local utils = require("core.utils")
 
----@param handle file*?
----@param err string?
-local read_from_handle = function(handle, err)
-	if not handle then
-		error(err)
-	end
-	local res = handle:read("*a")
-	handle:close()
-	res = res:sub(1, #res - 1)
-	return res
-end
-
 ---@param err string?
 local error = function(err)
 	io.stderr:write(
@@ -109,19 +97,20 @@ if #parser.data.args == 0 then
 	error("No filename passed.")
 end
 
-local filename = read_from_handle(
+local filename = utils.read_from_handle(
 	io.popen("realpath " .. Path:new(parser.data.args[1]):escaped())
-)
+) or error("Expected realpath command to be available")
 
 local dest_path = parser:find("--out")
-		and read_from_handle(
+		and utils.read_from_handle(
 			io.popen(
 				"realpath " .. Path:new(assert(parser:find("--out"))):escaped()
 			)
 		)
 	or filename
 
-local text = read_from_handle(io.open(filename, "r"))
+local text = utils.read_from_handle(io.open(filename, "r"))
+	or error("Failed to read source file")
 
 local config_name = parser:find("--config") or "DEFAULT"
 if not custom_configs[config_name] then
@@ -137,11 +126,11 @@ end
 local source_dir = tostring(assert(Path:new(filename):directory()))
 
 local plan_stream = math.tointeger(parser:find("--plan-stream"))
-if plan_stream == nil then
+if parser:find("--plan-stream") and plan_stream == nil then
 	error("Plan stream value is invalid.")
 end
 local text_stream = math.tointeger(parser:find("--text-stream"))
-if text_stream == nil then
+if parser:find("--text-stream") and text_stream == nil then
 	error("Text stream value is invalid.")
 end
 

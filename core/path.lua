@@ -1,4 +1,5 @@
 local validate = require("core.validate")
+local utils = require("core.utils")
 
 ---@class Path
 ---@field parts string[]
@@ -7,8 +8,16 @@ Path.__index = Path
 Path.__name = "Path"
 
 Path.errors = {
+
+	--- @return string
 	cannot_modify_void = function()
 		return "Cannot modify void path."
+	end,
+
+	--- @param path string
+	--- @return string
+	path_should_begin_with_slash = function(path)
+		return "Path " .. path .. ' should begin with "/" or "~/"'
 	end,
 }
 
@@ -43,6 +52,12 @@ function Path:new(path)
 		end
 	else
 		---@cast path string
+		if path:sub(1, 1) == "~" and path:sub(2, 2) == "/" then
+			path = assert(utils.get_home_directory()) .. path:sub(3)
+		end
+		if path:sub(1, 1) ~= "/" then
+			return nil, Path.errors.path_should_begin_with_slash(path)
+		end
 		for part in string.gmatch(path, "[^/]*") do
 			table.insert(self.parts, part)
 		end
@@ -130,6 +145,39 @@ end
 ---@return string
 function Path:escaped()
 	return "'" .. tostring(self):gsub("'", "'\\''") .. "'"
+end
+
+--- If the `path` given is a relative path (like `"./foo"` or `"../bar"`), then
+--- the `path` is expanded, with the self directory as the base `"./"` path.
+--- Otherwise, behaves identically to `Path:new(path)`.
+---
+--- Examples:
+--- ```lua
+--- assert(Path:new("/foo/"):join("bar") == Path:new("/foo/bar"))
+--- assert(Path:new("/foo/bar"):join("./baz") == Path:new("/foo/baz"))
+--- ```
+--- @param path string
+--- @return Path?
+--- @return string? errmsg
+function Path:join(path)
+	local err = validate.types("Path:join", { { path, "string", "path" } })
+	if err then
+		return nil, err
+	end
+	if
+		path:sub(1, 1) == "."
+		and path:sub(2, 2) == "."
+		and path:sub(3, 3) == "/"
+	then
+		local copy = self:copy()
+		copy:pop_directory()
+		path = assert(tostring(copy:directory())) .. path:sub(4)
+	elseif path:sub(1, 1) == "." and path:sub(2, 2) == "/" then
+		path = assert(tostring(self:directory())) .. path:sub(3)
+	elseif path.sub(1, 1) ~= "/" then
+		path = assert(tostring(self:directory())) .. path
+	end
+	return Path:new(path)
 end
 
 ---@return Path
