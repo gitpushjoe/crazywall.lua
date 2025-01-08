@@ -45,6 +45,7 @@ local Context = require("core.context")
 local Section = {}
 Section.__index = Section
 Section.__name = "Section"
+Section.ROOT = "ROOT"
 
 ---@param id number
 ---@param type [string, string, string]
@@ -134,6 +135,12 @@ end
 --- @return string
 function Section:get_text()
 	return utils.str.join_lines(self:get_lines())
+end
+
+--- Returns true if the section is the ROOT section.
+--- @return boolean
+function Section:is_root()
+	return self.type[1] == Section.ROOT
 end
 
 --- Returns the open tag for this section.

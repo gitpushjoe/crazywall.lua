@@ -50,7 +50,7 @@ local default_config = require("core.defaults.config")
 --- were both assigned the same path.
 --- @field allow_local_overwrite boolean?
 ---
---- Specifies if a section is allowed to overwrite a file in the filesystem 
+--- Specifies if a section is allowed to overwrite a file in the filesystem
 --- when necessary.
 --- @field allow_overwrite boolean?
 ---
@@ -82,6 +82,13 @@ Config.errors = {
 			.. "in config.note_schema["
 			.. idx
 			.. "]."
+	end,
+
+	--- @return string
+	root_reserved = function()
+		return "Cannot use "
+			.. "ROOT"
+			.. " as the name of a note type in `config.note_schema`."
 	end,
 }
 
@@ -124,6 +131,9 @@ function Config:new(config_table)
 		})
 		if err then
 			return nil, err
+		end
+		if note_type[1] == "ROOT" then
+			return nil, Config.errors.root_reserved()
 		end
 	end
 	self.note_schema = note_schema

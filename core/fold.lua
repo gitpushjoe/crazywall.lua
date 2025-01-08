@@ -56,6 +56,7 @@ M.errors = {
 	end,
 
 	---@param path string
+	---@return string
 	expected_file_to_be_writable = function(path)
 		return "Expected file " .. tostring(path) .. " to be writable"
 	end,
@@ -64,8 +65,15 @@ M.errors = {
 ---@param ctx Context
 ---@return Section?, string?
 M.parse = function(ctx)
-	local curr_section, err =
-		Section:new(0, utils.read_only({ "ROOT" }), ctx, 1, #ctx.lines, {}, nil)
+	local curr_section, err = Section:new(
+		0,
+		utils.read_only({ Section.ROOT, "", "" }),
+		ctx,
+		1,
+		#ctx.lines,
+		{},
+		nil
+	)
 	local id = 1
 	local root = curr_section
 	if not curr_section then
