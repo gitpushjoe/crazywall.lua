@@ -2,7 +2,7 @@
 ---@field parent_directory table
 ---@field filename string
 ---@field opened boolean
-MockFS_Handle = {}
+local MockFS_Handle = {}
 MockFS_Handle.__index = MockFS_Handle
 
 ---@param parent_directory table

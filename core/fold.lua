@@ -5,7 +5,9 @@ local traverse = require("core.traverse")
 local validate = require("core.validate")
 local Plan = require("core.plan.plan")
 local Action = require("core.plan.action")
+local Path = require("core.path")
 
+--- Functions for the primary crazywall operation.
 local M = {}
 M.__name = "fold"
 
@@ -119,7 +121,7 @@ M.parse = function(ctx)
 		if
 			curr_section
 			and curr_section.type[1] ~= "ROOT"
-			and str.ends_with(line, curr_section:suffix())
+			and str.ends_with(line, curr_section:close_tag())
 		then
 			curr_section.end_line = i
 			curr_section = curr_section.parent
@@ -263,7 +265,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 	---@return file*?
 	local function get_write_handle(path_str)
 		if is_dry_run then
-			local directory = assert(Path:new(path_str or "")):directory()
+			local directory = assert(Path:new(path_str or "")):get_directory()
 			if not file_exists(tostring(directory)) then
 				return nil
 			end
@@ -385,7 +387,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 			return nil, M.errors.cannot_write(full_path, section)
 		end
 
-		local err = mkdir(assert(section.path:directory()))
+		local err = mkdir(assert(section.path:get_directory()))
 		if err then
 			return nil, err
 		end

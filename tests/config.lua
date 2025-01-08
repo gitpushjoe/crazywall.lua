@@ -3,6 +3,7 @@ local Config = require("core.config")
 local streams = require("core.streams")
 local fold = require("core.fold")
 local MockFilesystem = require("core.mock_filesystem.mock_filesystem")
+local Context = require("core.context")
 
 local TEST_Config = Suite:new("Config")
 
@@ -45,7 +46,9 @@ local make_simple_config = function()
 		resolve_reference = function(section)
 			return assert(section.path:get_filename():gsub(".txt", ""))
 		end,
-
+		transform_lines = function(section)
+			return section:get_lines()
+		end,
 		allow_makedir = false,
 		allow_overwrite = false,
 		local_retry_count = 0,
@@ -72,6 +75,7 @@ end
 
 ---@param ctx Context
 ---@param is_dry_run boolean?
+---@return Plan?, string?
 local do_fold = function(ctx, is_dry_run)
 	local root, err = assert(fold.parse(ctx))
 	if err then
@@ -86,7 +90,7 @@ local do_fold = function(ctx, is_dry_run)
 	if err then
 		return nil, err
 	end
-	return true
+	return plan
 end
 
 TEST_Config["(simple)"] = function()
@@ -137,11 +141,18 @@ TEST_Config["(indents)"] = function()
 	local expected_filesystem = MockFilesystem:new({
 		home = {
 			tests = {
-				["note.txt"] = "curly fruit\n\tcurly vegetable",
+				["note.txt"] = [[curly fruit
+	curly vegetable]],
 				["angle golden delicious.txt"] = "golden delicious",
 				["angle granny smith.txt"] = "granny smith",
-				["paren apple.txt"] = "apple\n\tangle golden delicious\n\tangle granny smith\n",
-				["curly fruit.txt"] = "fruit\n\tparen apple\n\tparen banana\n",
+				["paren apple.txt"] = [[apple
+	angle golden delicious
+	angle granny smith
+]],
+				["curly fruit.txt"] = [[fruit
+	paren apple
+	paren banana
+]],
 				["paren banana.txt"] = "banana",
 				["curly vegetable.txt"] = "vegetable",
 			},

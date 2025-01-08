@@ -1,10 +1,10 @@
 local utils = require("core.utils")
-require("core.path")
+local Path = require("core.path")
 
----@alias CREATE_ACTION { type: "CREATE", path: Path, lines: string[], tostring: fun(self: CREATE_ACTION): string }
----@alias OVERWRITE_ACTION { type: "OVERWRITE", path: Path, lines: string[], tostring: fun(self: OVERWRITE_ACTION): string }
----@alias MKDIR_ACTION { type: "MKDIR", path: Path, tostring: fun(self: MKDIR_ACTION): string }
----@alias IGNORE_ACTION { type: "IGNORE", path: Path, lines: string[], tostring: fun(self: IGNORE_ACTION): string }
+---@alias CREATE_ACTION { type: "CREATE", path: Path, lines: string[], tostring: fun(self: Action): string }
+---@alias OVERWRITE_ACTION { type: "OVERWRITE", path: Path, lines: string[], tostring: fun(self: Action): string }
+---@alias MKDIR_ACTION { type: "MKDIR", path: Path, tostring: fun(self: Action): string }
+---@alias IGNORE_ACTION { type: "IGNORE", path: Path, lines: string[], tostring: fun(self: Action): string }
 ---@alias RENAME_ACTION { type: "RENAME", path: Path, new_path: Path }
 
 ---@alias Action CREATE_ACTION|OVERWRITE_ACTION|MKDIR_ACTION|IGNORE_ACTION|RENAME_ACTION
@@ -17,8 +17,9 @@ M.MKDIR = "MKDIR"
 M.IGNORE = "IGNORE"
 M.RENAME = "RENAME"
 
--- TODO(gitpushjoe): add option for no colors
----@param self Action
+--- TODO(gitpushjoe): add option for no colors
+--- @param self Action
+--- @return string
 local tostring = function(self)
 	local text = self.type == M.CREATE and "\27[32m"
 		or self.type == M.MKDIR and "\27[33m"

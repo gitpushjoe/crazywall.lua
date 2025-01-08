@@ -3,22 +3,59 @@ local Path = require("core.path")
 local validate = require("core.validate")
 local str = utils.str
 local streams = require("core.streams")
+local Config = require("core.config")
 
----@class (exact) Context
----@field config Config
----@field lines (string|boolean)[]
----@field use_mock_filesystem boolean
----@field src_path Path
----@field dest_path Path
----@field mock_filesystem MockFilesystem?
----@field is_dry_run boolean
----@field auto_confirm boolean
----@field plan_stream Stream
----@field text_stream Stream
----@field preserve boolean
----@field io iolib
+--- Represents the current state during execution, configuration options, and
+--- command-line arguments.
+--- @class (exact) Context
+---
+--- The current config being used.
+--- @field config Config
+---
+--- The current state of the text.
+--- At initialization, the source text is split by newlines. As section
+--- references are resolved, their lines aren't actually "deleted", but they
+--- are replaced with false. The methods `context:get_lines()`,
+--- `section:get_lines()`, `context:get_text()`, `section:get_text()`, and
+--- `utils.str.join_lines` will automatically handle this, and ignore those
+--- lines.
+--- @field lines (string|boolean)[]
+---
+--- Specifies if a mock filesystem is currently being used.
+--- @field use_mock_filesystem boolean
+---
+--- The path to the input source file.
+--- @field src_path Path
+---
+--- The destination path. If `--preserve` is passed, this will NOT be
+--- Path:void().
+--- @field dest_path Path
+---
+--- The mock filesystem being used, if any.
+--- @field mock_filesystem MockFilesystem?
+---
+--- Specifies if `--dry-run` was passed. Does NOT specify if the current
+--- execution step is a dry run or not.
+--- @field is_dry_run boolean
+---
+--- Specifies if `--yes` was passed.
+--- @field auto_confirm boolean
+---
+--- The stream to emit the plan object to.
+--- @field plan_stream Stream
+---
+--- The stream to emit the destination text to.
+--- @field text_stream Stream
+---
+--- Specifies if `--preserve` was passed.
+--- @field preserve boolean
+---
+--- If `context.use_mock_filesystem`, then this will be the MockFS_IO
+--- associated with the mock filesystem. Otherwise, will be the Lua `io`
+--- library.
+--- @field io iolib
 
-Context = {}
+local Context = {}
 Context.__index = Context
 Context.__name = "Context"
 
@@ -154,6 +191,25 @@ function Context:new(
 	end
 	self.dest_path = dest
 	return self
+end
+
+--- Returns the source text, but with the deleted lines removed. Lines are
+--- deleted as section texts are replaced with references.
+--- @return string[]
+function Context:get_lines()
+	local lines = {}
+	for _, line in ipairs(self.lines) do
+		if line ~= false then
+			table.insert(lines, line)
+		end
+	end
+	return lines
+end
+
+--- Returns the current state of the source text.
+--- @return string
+function Context:get_text()
+	return utils.str.join_lines(self:get_lines())
 end
 
 return Context

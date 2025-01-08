@@ -1,4 +1,4 @@
-require("core.path")
+local Path = require("core.path")
 
 ---@alias MockFile { [string]: MockFile|string }
 
@@ -30,7 +30,9 @@ function MockFilesystem:__tostring()
 	---@param path Path
 	local function print_elem(path, elem, filename)
 		if type(elem) == type({}) then
-			path:push_directory(filename)
+			if filename ~= "" then
+				path:push_directory(filename)
+			end
 			local keys = {}
 			for name in pairs(elem) do
 				table.insert(keys, name)
@@ -47,7 +49,7 @@ function MockFilesystem:__tostring()
 		out = out .. "(file)      " .. tostring(path) .. ": \n"
 		out = out .. elem .. "\n-----\n"
 	end
-	print_elem(assert(Path:new("")), self.table, "")
+	print_elem(assert(Path:new("/")), self.table, "")
 	return out
 end
 

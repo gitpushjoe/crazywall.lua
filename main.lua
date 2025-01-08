@@ -14,6 +14,7 @@ end
 
 local fold = require("core.fold")
 local Config = require("core.config")
+local Context = require("core.context")
 local Path = require("core.path")
 local custom_configs = require("configs")
 local Parser = require("core.parser")
@@ -123,7 +124,7 @@ if not config then
 	error(err)
 end
 
-local source_dir = tostring(assert(Path:new(filename):directory()))
+local source_dir = tostring(assert(Path:new(filename):get_directory()))
 
 local plan_stream = math.tointeger(parser:find("--plan-stream"))
 if parser:find("--plan-stream") and plan_stream == nil then

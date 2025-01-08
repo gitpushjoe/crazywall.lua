@@ -1,13 +1,14 @@
 local utils = require("core.utils")
+local Path = require("core.path")
 
 ---@type Config
 local default_config = {
 
-	--- Look for a line in the source file that begins with "# " and continue
-	--- until you find a line ending with "[!h1]". Everything within those
-	--- lines will be put in a Section object, and doing section:type() will
-	--- return { "h1", "# ", "[!h1]" }. The same goes for all of the other
-	--- items in `note_schema`.
+	--- With this schema, crazywall will look for a line in the source file 
+	--- that begins with "# " and continue until it finds a line ending with 
+	--- "[!h1]". Everything within those lines will be captured in a Section 
+	--- object, and doing section:type() will return { "h1", "# ", "[!h1]" }. 
+	--- The same goes for all of the other items in `note_schema`.
 	note_schema = {
 		{ "h1", "# ", "[!h1]" },
 		{ "h2", "## ", "[!h2]" },
@@ -26,7 +27,7 @@ local default_config = {
 		--- `--preserve` is enabled, this will be the directory of the source
 		--- file.)
 		--- Note that if the parent path is Path:void(), then this will be nil.
-		local path = section.parent.path:directory()
+		local path = section.parent.path:get_directory()
 
 		--- If the parent path should be ignored, then set this section to be
 		--- ignored as well.
@@ -70,7 +71,7 @@ local default_config = {
 
 		--- Then, add the open tag (the "#"s) back to the start of the first
 		--- line.
-		lines[1] = section:prefix() .. lines[1]
+		lines[1] = section:open_tag() .. lines[1]
 		return lines
 	end,
 

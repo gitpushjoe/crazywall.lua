@@ -1,9 +1,13 @@
 local validate = require("core.validate")
 local utils = require("core.utils")
 
----@class Path
----@field parts string[]
-Path = {}
+--- Representation of a path as a stack of string "parts".
+--- Should always be absolute paths.
+--- Directories are reprsented with a trailing "/".
+---
+--- @class Path
+--- @field parts string[]
+local Path = {}
 Path.__index = Path
 Path.__name = "Path"
 
@@ -33,6 +37,7 @@ end
 function Path:new(path)
 	self = {}
 	setmetatable(self, Path)
+	--- @cast self Path
 
 	local err = validate.types("Path:new", { { path, "string|table", "path" } })
 	if err then
@@ -68,12 +73,17 @@ function Path:new(path)
 	return self
 end
 
----@return Path
+--- Path for discarding all text written to it.
+--- Equivalent to `Path:new("/dev/null")`.
+--- Trying to modify a `Path:void()` will throw an error.
+--- `Path:void():directory()` will return an empty string.
+--- @return Path
 function Path.void()
 	return assert(Path:new("/dev/null"))
 end
 
----@return boolean
+--- Returns true if the `Path` is equivalent to `Path:void()`.
+--- @return boolean
 function Path:is_void()
 	return #self.parts == 3
 		and self.parts[1] == ""
@@ -81,19 +91,50 @@ function Path:is_void()
 		and self.parts[3] == "null"
 end
 
----@return boolean
+--- Returns true if the `Path` is a directory.
+---
+--- Examples:
+--- ```lua
+--- assert(Path:new("/foo/bar/"):is_directory())
+--- assert(not Path:new("/foo/bar/baz"):is_directory())
+--- ```
+--- @return boolean
 function Path:is_directory()
 	return self.parts[#self.parts] == ""
 end
 
----@return Path
+--- Modifies the `Path` to a directory, by removing the filename.
+--- Equivalent to `Path:set_filename("")`.
+--- Throws an error if the path is `Path:void()`.
+---
+--- Examples:
+--- ```lua
+--- local path = Path:new("/foo/bar/baz")
+--- assert(path:to_directory() == Path:new("/foo/bar/"))
+--- assert(path:to_directory() == Path:new("/foo/bar/"))
+--- ```
+--- @return Path
 function Path:to_directory()
 	handle_is_void(self)
 	self.parts[#self.parts] = ""
 	return self
 end
 
----@return string?
+--- Removes the last directory from the `Path`. If there is a filename, the
+--- filename is retained.
+--- Returns the popped directory.
+--- Throws an error if the path is `Path:void()`.
+---
+--- Examples:
+--- ```lua
+--- local path = Path:new("/foo/bar/baz")
+--- assert(path:pop_directory() == "bar")
+--- assert(path == Path:new("/foo/baz"))
+--- path = Path:new("/foo/baz/")
+--- assert(path:pop_directory() == "baz")
+--- assert(path == Path:new("/foo/"))
+--- ```
+--- @return string?
 function Path:pop_directory()
 	handle_is_void(self)
 	if #self.parts <= 2 then
@@ -102,19 +143,61 @@ function Path:pop_directory()
 	return table.remove(self.parts, #self.parts - 1)
 end
 
----@param part string
----@return string?
+--- Appends a directory to the stack, before the filename, if any.
+--- Returns `self`.
+--- Throws an error if the path is `Path:void()`.
+---
+--- Examples:
+--- ```lua
+--- local path = Path:new("/foo/baz")
+--- assert(path:push_directory("bar") == Path:new("/foo/bar/baz"))
+--- path = Path:new("/foo/bar/")
+--- assert(path:push_directory("baz") == Path:new("/foo/bar/baz/"))
+--- ```
+--- @param part string
+--- @return self
 function Path:push_directory(part)
 	handle_is_void(self)
 	if #self.parts == 0 then
 		table.insert(self.parts, part)
-		return
+		return self
 	end
 	table.insert(self.parts, #self.parts, part)
+	return self
 end
 
----@param filename string
----@return string
+--- Returns a copy of the `Path`, representing the directory the path is
+--- contained in. Returns a copy of `self` if the `Path` is already a
+--- directory.
+---
+--- Examples:
+--- ```lua
+--- assert(Path:new("/foo/bar/baz"):directory() == Path:new("/foo/bar/"))
+--- assert(Path:new("/foo/bar/baz/"):directory() == Path:new("/foo/bar/baz/"))
+--- ```
+--- @return Path?
+function Path:get_directory()
+	if self:is_void() then
+		return nil
+	end
+	local copy = self:copy()
+	return copy:to_directory()
+end
+
+--- Modifies the filename of the path. Set to `""` to make the path a
+--- directory. Returns the old filename.
+--- Throws an error if the path is `Path:void()`.
+---
+--- Examples:
+--- ```lua
+--- local path = Path:new("/foo/baz")
+--- assert(path:set_filename("bar") == "baz")
+--- assert(path == Path:new("/foo/bar"))
+--- assert(path:set_filename("") == "bar")
+--- assert(path == Path:new("/foo/"))
+--- ```
+--- @param filename string
+--- @return string
 function Path:set_filename(filename)
 	handle_is_void(self)
 	if #self.parts < 1 then
@@ -125,7 +208,9 @@ function Path:set_filename(filename)
 	return old_filename
 end
 
----@return string
+--- Returns the filename of the path. Returns `""` if the path is a directory
+--- or if the path is void.
+--- @return string
 function Path:get_filename()
 	if self:is_void() then
 		return ""
@@ -142,7 +227,14 @@ function Path:__tostring()
 	return out
 end
 
----@return string
+--- Returns an escaped, single-quoted representation of the path for use on the
+--- command line.
+---
+--- Example:
+--- ```lua
+--- assert(Path:new("/foo/'bar'/baz"):escaped() == "'/foo/'\\''bar'\\''/baz'")
+--- ```
+--- @return string
 function Path:escaped()
 	return "'" .. tostring(self):gsub("'", "'\\''") .. "'"
 end
@@ -171,22 +263,23 @@ function Path:join(path)
 	then
 		local copy = self:copy()
 		copy:pop_directory()
-		path = assert(tostring(copy:directory())) .. path:sub(4)
+		path = assert(tostring(copy:get_directory())) .. path:sub(4)
 	elseif path:sub(1, 1) == "." and path:sub(2, 2) == "/" then
-		path = assert(tostring(self:directory())) .. path:sub(3)
+		path = assert(tostring(self:get_directory())) .. path:sub(3)
 	elseif path.sub(1, 1) ~= "/" then
-		path = assert(tostring(self:directory())) .. path
+		path = assert(tostring(self:get_directory())) .. path
 	end
 	return Path:new(path)
 end
 
----@return Path
+--- Returns a copy of the `Path`.
+--- @return Path
 function Path:copy()
 	return assert(Path:new(self.parts))
 end
 
----@param rhs Path
----@return boolean
+--- @param rhs Path
+--- @return boolean
 function Path:__eq(rhs)
 	if #self.parts ~= #rhs.parts then
 		return false
@@ -197,15 +290,6 @@ function Path:__eq(rhs)
 		end
 	end
 	return true
-end
-
----@return Path?
-function Path:directory()
-	if self:is_void() then
-		return nil
-	end
-	local copy = self:copy()
-	return copy:to_directory()
 end
 
 return Path

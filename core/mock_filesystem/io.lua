@@ -2,10 +2,11 @@ local mock_fs_utils = require("core.mock_filesystem.utils")
 local Handle = require("core.mock_filesystem.handle")
 local ProcessHandle = require("core.mock_filesystem.process_handle")
 local validate = require("core.validate")
+local Path = require("core.path")
 
 ---@class MockFS_IO
 ---@field mock_filesystem MockFilesystem
-MockFS_IO = {}
+local MockFS_IO = {}
 MockFS_IO.__index = MockFS_IO
 
 MockFS_IO.errors = {

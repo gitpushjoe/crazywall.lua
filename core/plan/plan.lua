@@ -1,7 +1,3 @@
-local Action = require("core.plan.action")
-local utils = require("core.utils")
-require("core.plan.action")
-
 ---@class Plan
 ---@field actions Action[]
 Plan = {}

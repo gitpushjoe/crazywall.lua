@@ -1,40 +1,81 @@
 local validate = require("core.validate")
 local default_config = require("core.defaults.config")
-require("core.context")
 
----@alias NoteSchema [string, string, string][]
+--- @alias NoteSchema [string, string, string][]
 
----@class (exact) PartialConfigTable
----@field note_schema NoteSchema?
----@field resolve_path (fun(section: Section, context: Context): Path)|nil
----@field transform_lines (fun(section: Section, context: Context): string[])|nil
----@field resolve_reference (fun(section: Section, context: Context): string|boolean)|nil
----@field retry_count number?
----@field local_retry_count number?
----@field resolve_collision (fun(path: Path, section: Section, context: Context, retry_count: number): Path)|nil
----@field allow_local_overwrite boolean?
----@field allow_overwrite boolean?
----@field allow_makedir boolean?
+--- Configuration options for crazywall.
+--- All missing fields will use the defaults in `./core/defaults/config.lua`.
+--- @class (exact) PartialConfigTable
+---
+--- Defines a schema for note types with their corresponding open and close
+--- tags. Should be a list of `{ note_type_name, open_tag, close_tag }` lists.
+---
+--- Example:
+--- ```lua
+--- 	{ { "Heading", "# ", "[!end]" } }
+--- ```
+--- @field note_schema NoteSchema?
+---
+--- Callback to determine the destination `Path` of `section`.
+--- Both `section` and `context` are read_only.
+--- @field resolve_path (fun(section: Section, context: Context): Path)|nil
+---
+--- Callback to generate the text content to be written to the destination
+--- path of `section`. It should return an array of strings, which will be
+--- joined together with newlines and written to `section.path` during
+--- execution. Both `section` and `context` are read_only.
+--- @field transform_lines (fun(section: Section, context: Context): string[])|nil
+---
+--- Callback to resolve the "reference" of the section. During the execute
+--- step, once the destination text is resolved using `transform_lines`, all of
+--- the text content within the section will be replaced with this reference.
+--- Return `false` to indicate no reference, in which case the entire section
+--- will be deleted.
+--- Both `section` and `context` are read_only.
+--- @field resolve_reference (fun(section: Section, context: Context): string|boolean)|nil
+---
+--- Number of attempts to try resolving a local collision (two sections
+--- assigned the same path).
+--- @field local_retry_count number?
+---
+--- Number of attempts to try resolving a nonlocal collision (the path
+--- assigned to a section is already occupied by another file).
+--- @field retry_count number?
+---
+--- Callback to resolve a local/nonlocal path collision.
+--- Both `section` and `context` are read_only.
+--- @field resolve_collision (fun(path: Path, section: Section, context: Context, retry_count: number): Path)|nil
+---
+--- Specifies if a section is allowed to overwrite a previous section if they
+--- were both assigned the same path.
+--- @field allow_local_overwrite boolean?
+---
+--- Specifies if a section is allowed to overwrite a file in the filesystem 
+--- when necessary.
+--- @field allow_overwrite boolean?
+---
+--- Specifies if creating directories when necessary, is allowed.
+--- @field allow_makedir boolean?
 
----@class Config
----@field note_schema NoteSchema
----@field resolve_path fun(section: Section, context: Context): Path
----@field transform_lines fun(section: Section, context: Context): string[]
----@field resolve_reference fun(section: Section, context: Context): string|boolean
----@field retry_count number
----@field local_retry_count number
----@field resolve_collision fun(path: Path, section: Section, context: Context, retry_count: number): Path
----@field allow_local_overwrite boolean
----@field allow_overwrite boolean
----@field allow_makedir boolean
-Config = {}
+--- @class Config
+--- @field note_schema NoteSchema
+--- @field resolve_path fun(section: Section, context: Context): Path
+--- @field transform_lines fun(section: Section, context: Context): string[]
+--- @field resolve_reference fun(section: Section, context: Context): string|boolean
+--- @field retry_count number
+--- @field local_retry_count number
+--- @field resolve_collision fun(path: Path, section: Section, context: Context, retry_count: number): Path
+--- @field allow_local_overwrite boolean
+--- @field allow_overwrite boolean
+--- @field allow_makedir boolean
+local Config = {}
 Config.__index = Config
 Config.__name = "Config"
 
 Config.errors = {
 
-	---@param list table
-	---@return string
+	--- @param list table
+	--- @return string
 	missing_item_in_note_schema_list = function(list, idx)
 		return "Missing "
 			.. (#list <= 1 and "open-tag" or "close-tag")
@@ -44,11 +85,11 @@ Config.errors = {
 	end,
 }
 
----@param config_table PartialConfigTable
----@return Config?, string?
+--- @param config_table PartialConfigTable
+--- @return Config?, string?
 function Config:new(config_table)
 	self = {}
-	---@cast self Config
+	--- @cast self Config
 	setmetatable(self, Config)
 	local err = validate.types("Config:new", {
 		{ config_table.note_schema, "table?", "note_schema" },
@@ -59,7 +100,11 @@ function Config:new(config_table)
 		{ config_table.local_retry_count, "number?", "local_retry_count" },
 		{ config_table.resolve_collision, "function?", "resolve_collision" },
 		{ config_table.allow_overwrite, "boolean?", "allow_overwrite" },
-		{ config_table.allow_local_overwrite, "boolean?", "allow_local_overwrite" },
+		{
+			config_table.allow_local_overwrite,
+			"boolean?",
+			"allow_local_overwrite",
+		},
 		{ config_table.allow_makedir, "boolean?", "allow_makedir" },
 	})
 	if err then

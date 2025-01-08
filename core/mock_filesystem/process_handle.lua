@@ -3,7 +3,7 @@
 ---@field closed boolean
 ---@field succeeded boolean
 ---@field code integer?
-MockFS_ProcHandle = {}
+local MockFS_ProcHandle = {}
 MockFS_ProcHandle.__index = MockFS_ProcHandle
 
 ---@param result string

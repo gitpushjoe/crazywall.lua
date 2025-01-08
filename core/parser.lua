@@ -10,7 +10,7 @@ local validate = require("core.validate")
 ---@field flag_equivalences Equivalences
 ---@field kwarg_equivalences Equivalences
 ---@field data { args: string[], flags: { [string]: string }, kwargs: { [string]: string } }
-Parser = {}
+local Parser = {}
 Parser.__index = Parser
 Parser.__name = "Parser"
 
