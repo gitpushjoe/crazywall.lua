@@ -1,1 +1,1 @@
-[[prm/17363939900.md|The Intelligent Investor]]
+[[prm/17364552360.md|The Intelligent Investor]]

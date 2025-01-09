@@ -90,6 +90,11 @@ Config.errors = {
 			.. "ROOT"
 			.. " as the name of a note type in `config.note_schema`."
 	end,
+
+	--- @param key string
+	unexpected_key = function(key)
+		return "Unexpected key " .. key .. " in config."
+	end
 }
 
 --- @param config_table PartialConfigTable
@@ -99,6 +104,7 @@ function Config:new(config_table)
 	--- @cast self Config
 	setmetatable(self, Config)
 	local err = validate.types("Config:new", {
+		{ config_table, "table", "config_table" },
 		{ config_table.note_schema, "table?", "note_schema" },
 		{ config_table.resolve_path, "function?", "resolve_path" },
 		{ config_table.transform_lines, "function?", "transform_lines" },
@@ -116,6 +122,11 @@ function Config:new(config_table)
 	})
 	if err then
 		return nil, err
+	end
+	for key, _ in pairs(config_table) do
+		if default_config[key] == nil then
+			return nil, Config.errors.unexpected_key(key)
+		end
 	end
 	local note_schema = config_table.note_schema or default_config.note_schema
 	for i, note_type in ipairs(note_schema) do
