@@ -96,18 +96,13 @@ end
 
 --- Returns an array of strings.
 ---
---- If `config.transform_lines` has NOT been called on this section yet, this
---- function will return the lines of text associated with this section in the
---- source file. It will automatically remove the open tag and the close tag.
----
---- If `config.transform_lines` HAS already been called on this section, this
---- function will return the "destination lines" in `section.lines`, the lines
---- intended to be saved to another file.
+--- Returns the lines of text associated with this section in the source file.
+--- It will automatically remove the open tag and the close tag. If this method
+--- is called in `config.transform_lines` or `config.resolve_reference`, then
+--- it is guaranteed that all of the child nodes will have been resolved into
+--- references.
 --- @return string[]
 function Section:get_lines()
-	if self.lines then
-		return self.lines
-	end
 	local lines = {}
 	if not self.end_line then
 		return {}
@@ -119,22 +114,51 @@ function Section:get_lines()
 			table.insert(lines, line:sub(#self.indent + 1))
 		end
 	end
+	if #lines == 0 then
+		return {}
+	end
 	lines[1] = string.sub(lines[1], #self:open_tag() + 1, #lines[1])
 	local last_line = lines[#lines]
 	lines[#lines] = string.sub(last_line, 1, #last_line - #self:close_tag())
 	return lines
 end
 
---- If `config.transform_lines` has NOT been called on this section yet, this
---- function will return the text associated with this section in the source
---- file. It will automatically remove the open tag and the close tag.
+--- Returns an array of strings.
 ---
---- If `config.transform_lines` HAS already been called on this section, this
---- function will return the "destination text", the text intended to be saved
---- to another file.
+--- If `config.transform_lines` has been called on this section, this method
+--- will return the "transformed lines" (the lines intended to be saved to
+--- another file). Otherwise, will return nil.
+--- @return string[]?
+function Section:get_transformed_lines()
+	if not self.lines then
+		return nil
+	end
+	local lines = {}
+	for _, line in ipairs(self.lines) do
+		table.insert(lines, line)
+	end
+	return lines
+end
+
+--- Returns the text associated with this section in the source file. It will
+--- automatically remove the open tag and the close tag. If this method
+--- is called in `config.transform_lines` or `config.resolve_reference`, then
+--- it is guaranteed that all of the child nodes will have been resolved into
+--- references.
 --- @return string
 function Section:get_text()
 	return utils.str.join_lines(self:get_lines())
+end
+
+--- If `config.transform_lines` has been called on this section, this method
+--- will return the "transformed text" (the text intended to be saved to
+--- another file). Otherwise, will return nil.
+--- @return string?
+function Section:get_transformed_text()
+	if not self.lines then
+		return nil
+	end
+	return utils.str.join_lines(assert(self:get_transformed_lines()))
 end
 
 --- Returns true if the section is the ROOT section.
@@ -153,6 +177,32 @@ end
 ---@return string
 function Section:close_tag()
 	return self.type[3]
+end
+
+--- Returns the name of the type of this section.
+--- @return string
+function Section:type_name()
+	return self.type[1]
+end
+
+--- Checks if the name of the type of this section is the same as `name`, and
+--- also checks if `name` is one of the available type names in `note_schema`.
+--- If `name` isn't present in `note_schema`, throws an error.
+--- @param name string
+--- @return boolean
+function Section:type_name_is(name)
+	(function()
+		if name == Section.ROOT then
+			return
+		end
+		for _, note_type in ipairs(self.context.config.note_schema) do
+			if note_type[1] == name then
+				return
+			end
+		end
+		error("Section name " .. name .. " not found in `config.note_schema`.")
+	end)()
+	return name == self:type_name()
 end
 
 ---@return string?
@@ -200,7 +250,28 @@ function Section:__tostring()
 			end
 			return text
 		end)()
-		.. "}"
+		.. ",\n\ttransformed_lines = "
+		.. (function()
+			local text = "{"
+			local lines = self:get_transformed_lines()
+			if not lines then
+				return "nil"
+			end
+			for i, line in ipairs(lines) do
+				if line then
+					text = text
+					.. '"'
+					.. line:gsub("\\", "\\\\")
+						:gsub("\n", "\\n")
+						:gsub("\r", "\\r")
+						:gsub("\t", "\\t")
+					:gsub('"', '\\"')
+					.. '"'
+					.. (i ~= #lines and ", " or "")
+				end
+			end
+			return text .. "}"
+		end)()
 end
 
 return Section

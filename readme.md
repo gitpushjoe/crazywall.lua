@@ -1,20 +1,23 @@
 *NOTE: Currently only works on MacOS & Linux*
 
-# crazywall
+# 📌crazywall📌
 
-**crazywall** is a fast, unopinionated command-line tool for organizing your files.
+**crazywall** is a fast, fully-customizable command-line tool for organizing your notes, refactoring code, moving text in and out of files, and more!
 
-You can split your file into sections (which can be nested) and write callbacks to decide how each section gets mapped to its own file.
+You can create your own schema to define how a text file should be split into sections, and write your own callbacks to decide how to handle these sections.
 
 Table of Contents
 -----------------
  * [Features](#features)
  * [Installation](#installation)
  * [Getting Started](#getting-started)
+ * [Examples](#examples)
  * [Usage](#usage)
     * [Main Workflow](#main-workflow)
     * [Arguments](#arguments)
     * [Collision Resolution](#collision-resolution)
+ * [The SUS Pattern](#the-sus-pattern)
+ * [Assumptions](#assumptions)
 
 ## Features
 
@@ -43,13 +46,14 @@ Table of Contents
 crazywall includes built-in global defaults, geared towards use in Markdown notes. You can gain a better understanding of the default behavior [here](./core/defaults/config.lua). For example, the first item of the `note_schema` is `{ "h1", "# ", "[!h1]" }`, which means that if you create a file `./foo.md`:
 
 ```md
+<!-- foo.md --!>
 # My Note
 (Important stuff) [!h1]
 
 Something else!
 ```
 
-then the first two lines will be parsed as a section, since the first line starts with `"# "` and the second line ends with `"[!h1]"`. So, this would be the result if you ran `$ cw foo.md` with default settings (without the comments):
+then the first two lines will be parsed as a section, since the first line starts with `"# "` and the second line ends with `"[!h1]"`. So, this would be the result if you ran `$ cw foo.md` with default settings:
 
 ```md
 <!-- foo.md --!>
@@ -70,6 +74,7 @@ Here's an example `./configs.lua` setup to use `"[!h]"` for all close tags.
 ```lua
 --- ./configs.lua
 local utils = require("core.utils")
+local Path = require("core.path")
 
 ---@type { [string]: PartialConfigTable }
 local configs = {
@@ -91,6 +96,10 @@ local configs = {
 
 return configs
 ```
+
+## Examples
+
+There are currently five custom config examples in the [examples folder](./examples/). These examples, however, are primarily meant as a reference and starting point, as you are highly encouraged to write your own configs that are tailored to your particular workflow.
 
 ## Usage
 
@@ -140,9 +149,9 @@ To understand what each config option does, it's helpful to explain what happens
       - The root section has its `section.path` manually set to the destination path speciffied by the command-line arguments (defaults to the same path as the source file).
       - All other sections are visited [in preorder](https://commons.wikimedia.org/wiki/File:Preorder-traversal.gif) (i.e. outtermost-in). For each section,
           - crazywall will try to assign the `Path` object returned from `config.resolve_path( read_only(section), read_only(ctx) ) -> Path` to `section.path`.
-              - If the `Path` is `Path:void()`, then the section will not be saved to a file.
+              - If the `Path` is `Path.void()`, then the section will not be saved to a file.
               - If the `Path` returned has already been assigned to a different section
-                  - and `config.allow_local_overwrite == true`, then the current section will be assigned the path, and the other section will be assigned `Path:void()`.
+                  - and `config.allow_local_overwrite == true`, then the current section will be assigned the path, and the other section will be assigned `Path.void()`.
                   - Otherwise, crazywall will save the path as `original_path` and try to resolve the collision up to `config.local_retry_count` times. See [Collison Resolution](#collision-resolution).
 
     - Then, the output for each section and references are determined.
@@ -163,7 +172,7 @@ To understand what each config option does, it's helpful to explain what happens
         - If the directory of `section.path` exists, then a `"WRITE"` or `"OVERWRITE"` action is added to the plan.
             - If the directory does not exist and `config.allow_makedir == false`, then an error will be thrown.
             - Otherwise, a `"MKDIR"` action will be added first, to create the neceessary directories and subdirectories.
-            - Any `section` that was assigned the path `Path:void()` will get an `"IGNORE"` action.
+            - Any `section` that was assigned the path `Path.void()` will get an `"IGNORE"` action.
     - Finally, the `Plan` object is returned.
 
 6. If `--dry-run` was passed, then crazywall will exit here, otherwise step 5 will be repeated in non-dry-run mode, so every time an action (such as `"MKDIR"` or `"WRITE"`) is added to the plan, it will be executed.
@@ -191,14 +200,30 @@ crazywall offers two types of collision resolution:
 
 In both cases, the strategy is similar:
 
- a. Save the path as `original_path`.
+> a. Save the path as `original_path`.
+> 
+> b. Set `retry_count` to 0.
+> 
+> c. If `config.local_retry_count` (in the local case) or `config.retry_count` (in the nonlocal case) has been reached, throw an error.
+> 
+> d. Call `config.resolve_collision( original_path:copy(), read_only(section), read_only(ctx), retry_count ) -> Path`.
+> 
+> e. For local collisions, check if another section has that path. For nonlocal sections, check if the path is occupied by another file.
+>  - If the path is "free", then the section will be assigned the path.
+>  - Otherwise increment `retry_count` and go back to step (c).
 
- b. Set `retry_count` to 0.
+## The SUS Pattern
 
- c. If `config.local_retry_count` (in the local case) or `config.retry_count` (in the nonlocal case) has been reached, throw an error.
+Interestingly, the following two things are possible with sections:
 
- d. Call `config.resolve_collision( original_path:copy(), read_only(section), read_only(ctx), retry_count ) -> Path`.
+ - `config.resolve_path(section, ctx)` can return `Path.void()`, which means that the section will not be written to another file.
+- `config.resolve_reference(section, ctx)` can return a string that contains newlines in it.
 
- e. For local collisions, check if another section has that path. For nonlocal sections, check if the path is occupied by another file.
- - If the path is "free", then the section will be assigned the path.
- - Otherwise increment `retry_count` and go back to step (c).
+So, for example, if a section was assigned the path `Path.void()` and the reference `section:open_tag() .. section:get_text() .. section:close_tag()`, then it would appear as though the section was not changed. More importantly, you can use this to create a **Self-Updating Section**, where you return from `config.resolve_reference` the text you want the section to be updated to. For an example of this, see the "execute" note type in [./examples/code/](./examples/code/configs.lua). The section runs the command inside it in the terminal, and updates itself with the output. Some of the other examples use this pattern as well.
+
+## Assumptions
+
+crazywall makes two important assumptions to keep behavior simple and predictable:
+
+- Two paths with the same string reprsentation are the same, and two paths with different string representations are different. Because of this, **the [`Path`](./core/path.lua) class used only works with absolute paths**, and will throw an error if a relative path is given. To use `"~/"` and `"./"`, see [`Path:join()`](./core/path.lua).
+- No relevant filesystem changes occur between running `cw` and confirming. As stated previously, regardless of whether `--dry-run` was passed, crazywall will always do a dry-run before making any filesystem changes. If you run `cw`, then add or delete files, and then confirm, crazywall might nto be able to stick to the plan object it presented to you.

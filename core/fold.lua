@@ -38,6 +38,14 @@ M.errors = {
 			.. (tostring(section) or "nil")
 	end,
 
+	---@param path Path
+	---@return string
+	path_should_not_be_directory = function(path)
+		return "`config.resolve_path` returned directory-type Path ("
+			.. path:escaped()
+			.. ") instead of file-type Path"
+	end,
+
 	---@param path string
 	---@param section Section?
 	---@return string
@@ -164,12 +172,15 @@ M.prepare = function(section_root, ctx)
 		if err then
 			return nil, err
 		end
+		if path:is_directory() then
+			return nil, M.errors.path_should_not_be_directory(path)
+		end
 		local original_path = path:copy()
 
 		local retries = 0
 		while not path:is_void() and created_files[tostring(path)] do
 			if ctx.config.allow_local_overwrite then
-				created_files[tostring(path)].path = Path:void()
+				created_files[tostring(path)].path = Path.void()
 				break
 			end
 			section.path = path
@@ -231,10 +242,7 @@ M.prepare = function(section_root, ctx)
 		end
 
 		ctx.lines[section.start_line] = reference
-				and (string.sub(
-					section.indent,
-					section.parent and #section.parent.indent or 0
-				) .. reference)
+				and (section.indent .. reference)
 			or false
 		for i = section.start_line + 1, section.end_line do
 			ctx.lines[i] = false

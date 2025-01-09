@@ -17,7 +17,7 @@ M.str = {
 	end,
 
 	---@param str string
-	---@param include_empty boolean
+	---@param include_empty boolean?
 	---@return fun(): string
 	split_lines = function(str, include_empty)
 		include_empty = include_empty or false
@@ -26,7 +26,7 @@ M.str = {
 	end,
 
 	---@param str string
-	---@param include_empty boolean
+	---@param include_empty boolean?
 	---@return string[]
 	split_lines_to_list = function(str, include_empty)
 		local gen = M.str.split_lines(str, include_empty)
@@ -91,7 +91,9 @@ M.read_from_handle = function(handle)
 	end
 	local res = handle:read("*a")
 	handle:close()
-	res = res:sub(1, #res - 1)
+	if res:sub(#res, #res) == "\n" then
+		res = res:sub(1, #res - 1)
+	end
 	return res
 end
 

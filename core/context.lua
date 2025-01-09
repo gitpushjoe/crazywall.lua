@@ -28,7 +28,7 @@ local Config = require("core.config")
 --- @field src_path Path
 ---
 --- The destination path. If `--preserve` is passed, this will NOT be
---- Path:void().
+--- Path.void().
 --- @field dest_path Path
 ---
 --- The mock filesystem being used, if any.

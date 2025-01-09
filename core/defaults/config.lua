@@ -26,13 +26,13 @@ local default_config = {
 		--- directory that the destination note will be saved to. (If
 		--- `--preserve` is enabled, this will be the directory of the source
 		--- file.)
-		--- Note that if the parent path is Path:void(), then this will be nil.
+		--- Note that if the parent path is Path.void(), then this will be nil.
 		local path = section.parent.path:get_directory()
 
 		--- If the parent path should be ignored, then set this section to be
 		--- ignored as well.
 		if not path then
-			return Path:void()
+			return Path.void()
 		end
 
 		--- Ignore this section if the first line starts with "{" and ends with
@@ -41,7 +41,7 @@ local default_config = {
 			utils.str.starts_with(section:get_lines()[1], "{")
 			and utils.str.ends_with(section:get_lines()[1], "}")
 		then
-			return Path:void()
+			return Path.void()
 		end
 
 		--- Set the filename of the note to the first line of the section, or

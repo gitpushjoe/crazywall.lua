@@ -33,8 +33,10 @@ local handle_is_void = function(path)
 end
 
 ---@param path string|string[]
+---`allow_relative` IS INTENDED FOR INTERNAL USE ONLY.
+---@param allow_relative boolean?
 ---@return Path?, string?
-function Path:new(path)
+function Path:new(path, allow_relative)
 	self = {}
 	setmetatable(self, Path)
 	--- @cast self Path
@@ -60,7 +62,7 @@ function Path:new(path)
 		if path:sub(1, 1) == "~" and path:sub(2, 2) == "/" then
 			path = assert(utils.get_home_directory()) .. path:sub(3)
 		end
-		if path:sub(1, 1) ~= "/" then
+		if not allow_relative and path:sub(1, 1) ~= "/" then
 			return nil, Path.errors.path_should_begin_with_slash(path)
 		end
 		for part in string.gmatch(path, "[^/]*") do
@@ -75,14 +77,14 @@ end
 
 --- Path for discarding all text written to it.
 --- Equivalent to `Path:new("/dev/null")`.
---- Trying to modify a `Path:void()` will throw an error.
---- `Path:void():directory()` will return an empty string.
+--- Trying to modify a `Path.void()` will throw an error.
+--- `Path.void():directory()` will return an empty string.
 --- @return Path
 function Path.void()
 	return assert(Path:new("/dev/null"))
 end
 
---- Returns true if the `Path` is equivalent to `Path:void()`.
+--- Returns true if the `Path` is equivalent to `Path.void()`.
 --- @return boolean
 function Path:is_void()
 	return #self.parts == 3
@@ -105,7 +107,7 @@ end
 
 --- Modifies the `Path` to a directory, by removing the filename.
 --- Equivalent to `Path:set_filename("")`.
---- Throws an error if the path is `Path:void()`.
+--- Throws an error if the path is `Path.void()`.
 ---
 --- Examples:
 --- ```lua
@@ -123,7 +125,7 @@ end
 --- Removes the last directory from the `Path`. If there is a filename, the
 --- filename is retained.
 --- Returns the popped directory.
---- Throws an error if the path is `Path:void()`.
+--- Throws an error if the path is `Path.void()`.
 ---
 --- Examples:
 --- ```lua
@@ -145,7 +147,7 @@ end
 
 --- Appends a directory to the stack, before the filename, if any.
 --- Returns `self`.
---- Throws an error if the path is `Path:void()`.
+--- Throws an error if the path is `Path.void()`.
 ---
 --- Examples:
 --- ```lua
@@ -186,7 +188,7 @@ end
 
 --- Modifies the filename of the path. Set to `""` to make the path a
 --- directory. Returns the old filename.
---- Throws an error if the path is `Path:void()`.
+--- Throws an error if the path is `Path.void()`.
 ---
 --- Examples:
 --- ```lua

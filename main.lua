@@ -99,27 +99,23 @@ if #parser.data.args == 0 then
 end
 
 local filename = utils.read_from_handle(
-	io.popen("realpath " .. Path:new(parser.data.args[1]):escaped())
+	io.popen("realpath " .. Path:new(parser.data.args[1], true):escaped())
 ) or error("Expected realpath command to be available")
 
 local dest_path = parser:find("--out")
-		and utils.read_from_handle(
-			io.popen(
-				"realpath " .. Path:new(assert(parser:find("--out"))):escaped()
-			)
-		)
+		and tostring(Path:new(filename):join(assert(parser:find("--out"))))
 	or filename
 
 local text = utils.read_from_handle(io.open(filename, "r"))
 	or error("Failed to read source file")
 
 local config_name = parser:find("--config") or "DEFAULT"
-if not custom_configs[config_name] then
+if config_name ~= "DEFAULT" and not custom_configs[config_name] then
 	error('User-defined config "' .. config_name .. '" not found')
 end
 
 local config
-config, err = Config:new(custom_configs[config_name])
+config, err = Config:new(custom_configs[config_name] or {})
 if not config then
 	error(err)
 end
