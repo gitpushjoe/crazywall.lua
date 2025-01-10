@@ -61,7 +61,6 @@ local tostring = function(self, enable_ansi)
 				" ",
 				#"action         lines   chars   " - #"->  "
 			) .. "->  " .. tostring(self.new_path) or "")
-			.. "\27[0m"
 	)
 end
 

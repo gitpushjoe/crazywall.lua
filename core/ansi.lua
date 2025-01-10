@@ -47,7 +47,9 @@ M.magenta = color(35)
 M.cyan = color(36)
 M.white = color(37)
 
-M.none = apply_code(0, 0)
+M.none = function(str)
+	return str
+end
 M.bold = apply_code(1, 22)
 M.italic = apply_code(3, 23)
 
