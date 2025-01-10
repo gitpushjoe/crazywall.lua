@@ -260,7 +260,7 @@ end
 M.execute = function(section_root, ctx, is_dry_run)
 	is_dry_run = is_dry_run or false
 	local io = ctx.io
-	local plan = Plan:new()
+	local plan = Plan:new(ctx.ansi_enabled)
 	local created_or_modified_paths = {}
 
 	---@param path_str string?

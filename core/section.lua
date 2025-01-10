@@ -231,9 +231,9 @@ function Section:__tostring()
 		.. "}"
 		.. ",\n\tpath = "
 		.. (self.path and ('"' .. tostring(self.path) .. '"') or "nil")
-		.. ",\n\tlines = {"
+		.. ",\n\tlines = "
 		.. (function()
-			local text = ""
+			local text = "{"
 			local lines = self:get_lines()
 			for i, line in ipairs(lines) do
 				if line then
@@ -248,7 +248,7 @@ function Section:__tostring()
 						.. (i ~= #lines and ", " or "")
 				end
 			end
-			return text
+			return text .. "}"
 		end)()
 		.. ",\n\ttransformed_lines = "
 		.. (function()
@@ -260,18 +260,19 @@ function Section:__tostring()
 			for i, line in ipairs(lines) do
 				if line then
 					text = text
-					.. '"'
-					.. line:gsub("\\", "\\\\")
-						:gsub("\n", "\\n")
-						:gsub("\r", "\\r")
-						:gsub("\t", "\\t")
-					:gsub('"', '\\"')
-					.. '"'
-					.. (i ~= #lines and ", " or "")
+						.. '"'
+						.. line:gsub("\\", "\\\\")
+							:gsub("\n", "\\n")
+							:gsub("\r", "\\r")
+							:gsub("\t", "\\t")
+							:gsub('"', '\\"')
+						.. '"'
+						.. (i ~= #lines and ", " or "")
 				end
 			end
 			return text .. "}"
 		end)()
+		.. "\n}"
 end
 
 return Section

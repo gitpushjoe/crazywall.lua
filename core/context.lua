@@ -54,6 +54,9 @@ local Config = require("core.config")
 --- associated with the mock filesystem. Otherwise, will be the Lua `io`
 --- library.
 --- @field io iolib
+---
+--- Specifies if `--no-ansi` was not passed.
+--- @field ansi_enabled boolean
 
 local Context = {}
 Context.__index = Context
@@ -86,6 +89,7 @@ Context.errors = {
 ---@param plan_stream Stream
 ---@param text_stream Stream
 ---@param preserve boolean
+---@param ansi_enabled boolean
 ---@return Context?, string?
 function Context:new(
 	config,
@@ -97,7 +101,8 @@ function Context:new(
 	auto_confirm,
 	plan_stream,
 	text_stream,
-	preserve
+	preserve,
+	ansi_enabled
 )
 	self = {}
 	---@cast self Context
@@ -125,6 +130,7 @@ function Context:new(
 		{ auto_confirm, "boolean", "auto_confirm" },
 		{ preserve, "boolean", "preserve" },
 		{ is_dry_run, "boolean", "is_dry_run" },
+		{ ansi_enabled, "boolean", "ansi_enabled" },
 	})
 	if err then
 		return nil, err
@@ -148,6 +154,7 @@ function Context:new(
 	self.lines = {}
 	self.io = mock_filesystem and mock_filesystem.io or io
 	self.preserve = preserve
+	self.ansi_enabled = ansi_enabled
 	self.is_dry_run = is_dry_run
 
 	local lines = {}

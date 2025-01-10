@@ -1,11 +1,12 @@
 local utils = require("core.utils")
 local Path = require("core.path")
+local ansi = require("core.ansi")
 
----@alias CREATE_ACTION { type: "CREATE", path: Path, lines: string[], tostring: fun(self: Action): string }
----@alias OVERWRITE_ACTION { type: "OVERWRITE", path: Path, lines: string[], tostring: fun(self: Action): string }
----@alias MKDIR_ACTION { type: "MKDIR", path: Path, tostring: fun(self: Action): string }
----@alias IGNORE_ACTION { type: "IGNORE", path: Path, lines: string[], tostring: fun(self: Action): string }
----@alias RENAME_ACTION { type: "RENAME", path: Path, new_path: Path }
+---@alias CREATE_ACTION { type: "CREATE", path: Path, lines: string[], tostring: fun(self: Action, enable_ansi: boolean?): string }
+---@alias OVERWRITE_ACTION { type: "OVERWRITE", path: Path, lines: string[], tostring: fun(self: Action, enable_ansi: boolean?): string }
+---@alias MKDIR_ACTION { type: "MKDIR", path: Path, tostring: fun(self: Action, enable_ansi: boolean?): string }
+---@alias IGNORE_ACTION { type: "IGNORE", path: Path, lines: string[], tostring: fun(self: Action, enable_ansi: boolean?): string }
+---@alias RENAME_ACTION { type: "RENAME", path: Path, new_path: Path, tostring: fun(self: Action, enable_ansi: boolean?): string }
 
 ---@alias Action CREATE_ACTION|OVERWRITE_ACTION|MKDIR_ACTION|IGNORE_ACTION|RENAME_ACTION
 
@@ -17,21 +18,26 @@ M.MKDIR = "MKDIR"
 M.IGNORE = "IGNORE"
 M.RENAME = "RENAME"
 
---- TODO(gitpushjoe): add option for no colors
 --- @param self Action
+--- @param enable_ansi boolean
 --- @return string
-local tostring = function(self)
-	local text = self.type == M.CREATE and "\27[32m"
-		or self.type == M.MKDIR and "\27[33m"
-		or self.type == M.OVERWRITE and "\27[35m"
-		or self.type == M.IGNORE and "\27[31m"
-		or self.type == M.RENAME and "\27[96m"
-		or error("Unknown action type: " .. self.type)
-	text = text
-		.. "[ "
-		.. string.rep(" ", #"OVERWRITE" - #self.type)
-		.. self.type
-		.. " ]  "
+local tostring = function(self, enable_ansi)
+	local color = enable_ansi
+			and (({
+				[M.CREATE] = ansi.green,
+				[M.MKDIR] = ansi.yellow,
+				[M.OVERWRITE] = ansi.magenta,
+				[M.IGNORE] = ansi.red,
+				[M.RENAME] = ansi.cyan,
+			})[self.type] or error("Unknown action type: " .. self.type))
+		or ansi.none
+	local bold = enable_ansi and ansi.bold or ansi.none
+	local text = bold(
+		"[ "
+			.. string.rep(" ", #"OVERWRITE" - #self.type)
+			.. self.type
+			.. " ]  "
+	)
 	local line_count_str = "-"
 	local char_count_str = "-"
 	if self.lines then
@@ -42,19 +48,21 @@ local tostring = function(self)
 		end
 		char_count_str = tostring(char_count)
 	end
-	return text
-		.. string.rep(" ", #"lines " - #line_count_str)
-		.. line_count_str
-		.. "  "
-		.. string.rep(" ", #"chars " - #char_count_str)
-		.. char_count_str
-		.. "  "
-		.. tostring(self.path)
-		.. (self.type == M.RENAME and "\n" .. string.rep(
-			" ",
-			#"action         lines   chars   " - #"->  "
-		) .. "->  " .. tostring(self.new_path) or "")
-		.. "\27[0m"
+	return color(
+		text
+			.. string.rep(" ", #"lines " - #line_count_str)
+			.. line_count_str
+			.. "  "
+			.. string.rep(" ", #"chars " - #char_count_str)
+			.. char_count_str
+			.. "  "
+			.. tostring(self.path)
+			.. (self.type == M.RENAME and "\n" .. string.rep(
+				" ",
+				#"action         lines   chars   " - #"->  "
+			) .. "->  " .. tostring(self.new_path) or "")
+			.. "\27[0m"
+	)
 end
 
 ---@param path Path

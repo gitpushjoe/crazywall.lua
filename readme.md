@@ -186,6 +186,7 @@ To run crazywall on a file, you can simply run `$ cw <file>`. You can add any of
 |`--config <config>`, `-c <config>`|Uses the config named <config> in `configs.lua`. Defaults to `"DEFAULT"`.
 |`--dry-run`, `-dr`|Enable dry-run, which will not modify or add any new files or directories.
 |`--help`, `-h`|Prints the helptext.
+|`--no-ansi`, `-na`|Disables ANSI coloring.
 |`--out <file>`, `-o <file>`|Sets the destination for the new source text to `<file>`. Defaults to the path to the source file.
 |`--plan_stream <stream>`, `-ps <stream>`|The stream to print the crazywall plan object to. (0 for none, 1 for stdout, 2 for stderr.)  Defaults to 1.
 |`--preserve`, `-p`|Will not edit the source file.

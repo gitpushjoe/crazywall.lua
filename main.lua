@@ -20,14 +20,7 @@ local custom_configs = require("configs")
 local Parser = require("core.parser")
 local streams = require("core.streams")
 local utils = require("core.utils")
-
----@param err string?
-local error = function(err)
-	io.stderr:write(
-		"\27[1;31m" .. "ERROR: \27[0;91m" .. (err or "") .. "\n \27[0m"
-	)
-	os.exit(1)
-end
+local ansi = require("core.ansi")
 
 ---@param text string
 ---@param stream Stream
@@ -61,6 +54,11 @@ local parser = assert(Parser:new({
 		"-p",
 		"Will not edit the source file.",
 	},
+	{
+		"--no-ansi",
+		"-na",
+		"Disables ANSI coloring."
+	},
 }, {
 	{
 		"--plan-stream <stream>",
@@ -84,10 +82,22 @@ local parser = assert(Parser:new({
 	},
 }))
 
+local ansi_enabled = false
+
+---@param err string?
+local error = function(err)
+	local red = ansi_enabled and ansi.red or ansi.none
+	local bold = ansi_enabled and ansi.bold or ansi.none
+	io.stderr:write(red("ERROR: " .. bold(err or "")))
+	os.exit(1)
+end
+
 local success, err = parser:parse(arg)
 if not success then
 	error(err)
 end
+
+ansi_enabled = parser:find("--no-ansi") == nil
 
 if parser:find("--help") then
 	print(parser:get_helptext())
@@ -142,7 +152,8 @@ ctx, err = Context:new(
 	parser:find("--yes") ~= nil,
 	plan_stream or streams.STDOUT,
 	text_stream or streams.STDOUT,
-	parser:find("--preserve") ~= nil
+	parser:find("--preserve") ~= nil,
+	ansi_enabled
 )
 
 if not ctx then
