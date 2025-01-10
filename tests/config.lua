@@ -70,6 +70,7 @@ local make_simple_ctx = function(config, mock_filesystem)
 			true,
 			streams.NONE,
 			streams.NONE,
+			false,
 			false
 		)
 	)
