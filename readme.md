@@ -10,6 +10,7 @@ Table of Contents
 -----------------
  * [Features](#features)
  * [Installation](#installation)
+    * [Requirements](#requirements)
  * [Getting Started](#getting-started)
  * [Examples](#examples)
  * [Usage](#usage)
@@ -39,7 +40,18 @@ Table of Contents
 
 ## Installation
 
-[TODO]
+### Requirements
+ - Lua 5.3+
+ - A UNIX-based OS
+
+You can install `crazywall` using the following commands:
+
+```bash
+cd ~ # or wherever you wish to install
+git clone https://github.com/gitpushjoe/crazywall.lua.git crazywall
+cd crazywall
+sudo ln -s $(realpath ./cw.sh) /usr/bin/cw
+```
 
 ## Getting Started
 
