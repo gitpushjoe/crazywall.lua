@@ -14,13 +14,13 @@ M.__name = "fold"
 M.errors = {
 
 	---@param section Section?
-	---@return string
+	---@return string errmsg
 	unterminated_section = function(section)
 		return "Unterminated section: " .. (tostring(section) or "nil")
 	end,
 
 	---@param line number
-	---@return string
+	---@return string errmsg
 	inconsistent_indent = function(line)
 		return "Inconsistent indent on line " .. line
 	end,
@@ -28,7 +28,7 @@ M.errors = {
 	---@param retry_count number
 	---@param section Section?
 	---@param is_local boolean?
-	---@return string
+	---@return string errmsg
 	maximum_retry_count = function(retry_count, section, is_local)
 		return "Maximum "
 			.. (is_local and "local " or "")
@@ -39,7 +39,7 @@ M.errors = {
 	end,
 
 	---@param path Path
-	---@return string
+	---@return string errmsg
 	path_should_not_be_directory = function(path)
 		return "`config.resolve_path` returned directory-type Path ("
 			.. path:escaped()
@@ -48,14 +48,14 @@ M.errors = {
 
 	---@param path string
 	---@param section Section?
-	---@return string
+	---@return string errmsg
 	cannot_write = function(path, section)
 		return "Cannot write to path " .. path .. "\n" .. tostring(section)
 	end,
 
 	---@param command string
 	---@param err string?
-	---@return string
+	---@return string errmsg
 	command_failed = function(command, err)
 		return "Failed to execute command: "
 			.. command
@@ -64,14 +64,15 @@ M.errors = {
 	end,
 
 	---@param path string
-	---@return string
+	---@return string errmsg
 	expected_file_to_be_writable = function(path)
 		return "Expected file " .. tostring(path) .. " to be writable"
 	end,
 }
 
 ---@param ctx Context
----@return Section?, string?
+---@return Section? section
+---@return string? errmsg
 M.parse = function(ctx)
 	local curr_section, err = Section:new(
 		0,
@@ -160,7 +161,8 @@ end
 
 ---@param section_root Section
 ---@param ctx Context
----@return nil, string?
+---@return nil
+---@return string? errmsg
 M.prepare = function(section_root, ctx)
 	---@type { [string]: Section }
 	local created_files = {}
@@ -265,7 +267,8 @@ end
 ---@param section_root Section
 ---@param ctx Context
 ---@param is_dry_run boolean?
----@return Plan?, string?
+---@return Plan? plan
+---@return string? errmsg
 M.execute = function(section_root, ctx, is_dry_run)
 	is_dry_run = is_dry_run or false
 	local io = ctx.io
@@ -308,7 +311,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 	---@param lines string[]
 	---@param path Path
 	---@param is_overwrite boolean?
-	---@return string?
+	---@return string? errmsg
 	local function write(handle, lines, path, is_overwrite)
 		is_overwrite = is_overwrite or false
 		created_or_modified_paths[tostring(path)] = 1
@@ -325,7 +328,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 	end
 
 	---@param directory Path
-	---@return string?
+	---@return string? errmsg
 	local function mkdir(directory)
 		created_or_modified_paths[tostring(directory)] = 1
 		if not is_dry_run then

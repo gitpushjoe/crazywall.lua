@@ -21,6 +21,7 @@ local Parser = require("core.parser")
 local streams = require("core.streams")
 local utils = require("core.utils")
 local ansi = require("core.ansi")
+local version = require("core.version")
 
 ---@param text string
 ---@param stream Stream
@@ -57,7 +58,12 @@ local parser = assert(Parser:new({
 	{
 		"--no-ansi",
 		"-na",
-		"Disables ANSI coloring."
+		"Disables ANSI coloring.",
+	},
+	{
+		"--version",
+		"-v",
+		"Prints the current version.",
 	},
 }, {
 	{
@@ -101,6 +107,11 @@ ansi_enabled = parser:find("--no-ansi") == nil
 
 if parser:find("--help") then
 	print(parser:get_helptext())
+	os.exit(0)
+end
+
+if parser:find("--version") then
+	print("crazywall " .. version)
 	os.exit(0)
 end
 
