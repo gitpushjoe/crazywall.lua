@@ -65,7 +65,8 @@ function Path:new(path, allow_relative)
 		if not allow_relative and path:sub(1, 1) ~= "/" then
 			return nil, Path.errors.path_should_begin_with_slash(path)
 		end
-		for part in string.gmatch(path, "[^/]*") do
+		table.insert(self.parts, "")
+		for part in string.gmatch(path, "[^/]+") do
 			table.insert(self.parts, part)
 		end
 		if #self.parts == 1 and self.parts[1] == nil then
