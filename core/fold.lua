@@ -111,8 +111,13 @@ M.parse = function(ctx)
 		line = string.sub(line, indent_chars + 1)
 
 		for note_idx, note_type in ipairs(note_schema) do
-			local prefix = note_type[2]
-			if str.starts_with(line, prefix) then
+			local open_tag = note_type[2]
+			local do_not_open_only_close = line == open_tag
+				and curr_section
+				and open_tag == curr_section:close_tag()
+			if
+				str.starts_with(line, open_tag) and not do_not_open_only_close
+			then
 				local new_section
 				new_section, err = Section:new(
 					id,
@@ -134,10 +139,14 @@ M.parse = function(ctx)
 			end
 		end
 		-- TODO(gitpushjoe): maybe still check if a suffix for another note type slipped through?
+		local do_not_close_only_open = line == curr_section:open_tag()
+			and line == curr_section:close_tag()
+			and curr_section.start_line == i
 		if
 			curr_section
-			and curr_section.type[1] ~= "ROOT"
+			and not curr_section:is_root()
 			and str.ends_with(line, curr_section:close_tag())
+			and not do_not_close_only_open
 		then
 			curr_section.end_line = i
 			curr_section = curr_section.parent
@@ -157,7 +166,7 @@ M.prepare = function(section_root, ctx)
 	local created_files = {}
 
 	local _, err = traverse.preorder(section_root, function(section)
-		if section.type[1] == "ROOT" then
+		if section:is_root() then
 			section.path = ctx.dest_path
 			return
 		end
@@ -210,7 +219,7 @@ M.prepare = function(section_root, ctx)
 	end
 
 	_, err = traverse.postorder(section_root, function(section)
-		if section.type[1] == "ROOT" then
+		if section:is_root() then
 			section.lines = ctx.lines
 			return
 		end
@@ -350,7 +359,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 		end
 
 		while true do
-			if section.type[1] == "ROOT" then
+			if section:is_root() then
 				is_overwrite = ctx.src_path == ctx.dest_path
 				break
 			end
@@ -379,7 +388,7 @@ M.execute = function(section_root, ctx, is_dry_run)
 			full_path = tostring(section.path) or ""
 		end
 
-		if section.type[1] == "ROOT" and ctx.preserve then
+		if section:is_root() and ctx.preserve then
 			return
 		end
 
