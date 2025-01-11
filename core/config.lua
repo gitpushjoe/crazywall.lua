@@ -94,7 +94,7 @@ Config.errors = {
 	--- @param key string
 	unexpected_key = function(key)
 		return "Unexpected key " .. key .. " in config."
-	end
+	end,
 }
 
 --- @param config_table PartialConfigTable
@@ -105,6 +105,7 @@ function Config:new(config_table)
 	setmetatable(self, Config)
 	local err = validate.types("Config:new", {
 		{ config_table, "table", "config_table" },
+	}) or validate.types("Config:new", {
 		{ config_table.note_schema, "table?", "note_schema" },
 		{ config_table.resolve_path, "function?", "resolve_path" },
 		{ config_table.transform_lines, "function?", "transform_lines" },
