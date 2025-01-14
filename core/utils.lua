@@ -13,7 +13,7 @@ M.str = {
 	---@param suffix string
 	---@return boolean
 	ends_with = function(str, suffix)
-		return string.sub(str, -string.len(suffix)) == suffix
+		return suffix == "" or string.sub(str, -#suffix) == suffix
 	end,
 
 	---@param str string
@@ -95,6 +95,12 @@ M.read_from_handle = function(handle)
 		res = res:sub(1, #res - 1)
 	end
 	return res
+end
+
+---@param cmd string
+---@return string?
+M.run_command = function(cmd)
+	return M.read_from_handle(io.popen(cmd))
 end
 
 ---@return string

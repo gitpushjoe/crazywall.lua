@@ -52,7 +52,7 @@ Section.ROOT = "ROOT"
 ---@param context Context
 ---@param start_line number
 ---@param end_line number?
----@param children Section[]
+---@param children Section[]?
 ---@param parent Section?
 ---@param indent string?
 ---@return Section? section
@@ -89,7 +89,7 @@ function Section:new(
 	self.context = utils.read_only(context)
 	self.start_line = start_line
 	self.end_line = end_line
-	self.children = children
+	self.children = children or {}
 	self.parent = parent
 	self.indent = indent or ""
 	return self
@@ -208,7 +208,9 @@ end
 
 ---@return string
 function Section:__tostring()
-	return "Section {"
+	return "Section {\n"
+		.. 'id = '
+		.. self.id
 		.. '\n\ttype = {"'
 		.. self.type[1]
 		.. '", "'

@@ -79,7 +79,7 @@ Config.errors = {
 	missing_item_in_note_schema_list = function(list, idx)
 		return "Missing "
 			.. (#list <= 1 and "open-tag" or "close-tag")
-			.. "in config.note_schema["
+			.. " in config.note_schema["
 			.. idx
 			.. "]."
 	end,

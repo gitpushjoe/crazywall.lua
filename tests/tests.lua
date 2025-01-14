@@ -1,27 +1,26 @@
-local suites = {
-	require("tests.config"),
-}
+local utils = require("core.utils")
+local ansi = require("core.ansi")
+
+local suites = {}
+for v in utils.str.split_lines(assert(utils.run_command("ls -1 ./tests/*.lua"))) do
+	local match = string.match(v or "", "tests/(.*)%.lua")
+	if match ~= "" and match ~= "suite" and match ~= "tests" then
+		suites[#suites + 1] = require("tests." .. match)
+	end
+end
 
 --- TODO(gitpushjoe): make this automatic
-local modules_with_errors = {
-	require("core.config"),
-	require("core.fold"),
-	require("core.parser"),
-	require("core.path"),
-	require("core.section"),
-	require("core.traverse"),
-	require("core.validate"),
-	require("core.context"),
-	require("core.plan.action"),
-	require("core.plan.plan"),
-	require("core.mock_filesystem.io"),
-	require("core.mock_filesystem.handle"),
-	require("core.mock_filesystem.process_handle"),
-	require("core.mock_filesystem.utils"),
-	require("core.mock_filesystem.mock_filesystem"),
-	require("core.streams"),
-	require("core.utils"),
-}
+local modules = {}
+for v in
+	utils.str.split_lines(
+		assert(utils.run_command("ls -1 ./core/*.lua ./core/**/*.lua"))
+	)
+do
+	local match = string.match(v or "", "core/(.*)%.lua")
+	if match ~= "" then
+		modules[#modules + 1] = require("core." .. match:gsub("/", "."))
+	end
+end
 
 local total = 0
 local successes = 0
@@ -29,7 +28,7 @@ local failures = {}
 
 local uninvoked_errors = {}
 local total_invokable_error_count = 0
-for _, module in ipairs(modules_with_errors) do
+for _, module in ipairs(modules) do
 	if module.errors and module.__name then
 		for error, _ in pairs(module.errors) do
 			uninvoked_errors[module.__name .. ".errors." .. error] = 1
@@ -49,11 +48,11 @@ for _, suite in ipairs(suites) do
 			uninvoked_errors[name] = nil
 			if success then
 				successes = successes + 1
-				print(name .. ": SUCCESS")
+				print(name .. ": " .. ansi.green("SUCCESS"))
 			else
 				table.insert(failures, { suite.name, test.name })
-				print(name .. ": FAILURE")
-				print("\t" .. result:gsub("\n", "\n\t"))
+				print(ansi.red(name .. ": FAILURE"))
+				print(ansi.red("\t" .. result:gsub("\n", "\n\t")))
 			end
 		end
 	end
@@ -92,3 +91,7 @@ for _, failure in ipairs(failures) do
 end
 
 print()
+
+if #failures > 0 then
+	os.exit(1)
+end

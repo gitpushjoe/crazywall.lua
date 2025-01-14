@@ -53,4 +53,10 @@ function MockFilesystem:__tostring()
 	return out
 end
 
+---@param rhs MockFilesystem
+---@return boolean
+function MockFilesystem:__eq(rhs)
+	return tostring(self) == tostring(rhs)
+end
+
 return MockFilesystem

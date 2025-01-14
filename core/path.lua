@@ -70,6 +70,9 @@ function Path:new(path, allow_relative)
 		for part in string.gmatch(path, "[^/]+") do
 			table.insert(self.parts, part)
 		end
+		if path:sub(#path, #path) == "/" then
+			table.insert(self.parts, "")
+		end
 		if #self.parts == 1 and self.parts[1] == nil then
 			self.parts = {}
 		end
