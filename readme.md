@@ -1,5 +1,7 @@
 *NOTE: Currently only works on MacOS & Linux*
 
+[![Tests](https://github.com/gitpushjoe/crazywall.lua/actions/workflows/tests.yml/badge.svg)](https://github.com/gitpushjoe/crazywall.lua/actions/workflows/tests.yml)
+
 # 📌crazywall📌
 
 **crazywall** is a fast, fully-customizable command-line tool for organizing your notes, refactoring code, moving text in and out of files, and more!
