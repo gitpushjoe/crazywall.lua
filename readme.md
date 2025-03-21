@@ -84,7 +84,7 @@ Something else!
 (Important stuff)
 ```
 
-Let's say you wanted just `"[!h]"` to end all sections. Instead of modifying `./core/defaults/config.lua`, you can create a custom configuration in `./configs.lua`. The file should export a table where each config is mapped to a string. If you have a config mapped to `"DEFAULT"` (caps-sensitive), then crazywall will give this config priority over the other one, and fall back to the global defaults only when necessary. To use a specific custom config (e.g. `"foo"`), run `$ cw --config foo` or `$ cw -c foo`.
+Let's say you wanted just `"[!h]"` to end all sections. Instead of modifying `./crazywall/core/defaults/config.lua`, you can create a custom configuration in `./configs.lua`. The file should export a table where each config is mapped to a string. If you have a config mapped to `"DEFAULT"` (caps-sensitive), then crazywall will give this config priority over the other one, and fall back to the global defaults only when necessary. To use a specific custom config (e.g. `"foo"`), run `$ cw --config foo` or `$ cw -c foo`.
 
 Here's an example `./configs.lua` setup to use `"[!h]"` for all close tags.
 
@@ -127,11 +127,11 @@ To understand what each config option does, it's helpful to explain what happens
 1. **Command-line arguments are parsed**
     - See [Arguments](#arguments).
 2. **Some initialization is done.**
-    - A [`Config`](./core/config.lua) object is created, based on the specified `--config` or `"DEFAULT"`. Missing options are filled in using global defaults from `./core/defaults/config.lua`.
-    - A [`Context`](./core/context.lua) object is created using the config, the text of the source file, and the command line arguments.
-3. **The source text is parsed (see [`fold.parse`](./core/fold.lua)).**
+    - A [`Config`](./crazywall/core/config.lua) object is created, based on the specified `--config` or `"DEFAULT"`. Missing options are filled in using global defaults from `./crazywall/core/defaults/config.lua`.
+    - A [`Context`](./crazywall/core/context.lua) object is created using the config, the text of the source file, and the command line arguments.
+3. **The source text is parsed (see [`fold.parse`](./crazywall/core/fold.lua)).**
     - The entire source file is modeled as a doubly-linked tree of `Section` nodes, which can be traversed via `section.parent` and `section.children`.
-    - A [`Section`](./core/section.lua) object is created with note type `{ "ROOT" }`, representing the entire source text. 
+    - A [`Section`](./crazywall/core/section.lua) object is created with note type `{ "ROOT" }`, representing the entire source text. 
     - crazywall then parses the file using `config.note_schema`. `config.note_schema` should be a list of "note types", where each "note type" is a list of 3 strings:
         - the name of the note type
         - the open tag
@@ -161,7 +161,7 @@ To understand what each config option does, it's helpful to explain what happens
 └── * h1 section (lines 11 - 11)
 ```
 
-4. **Some preparation is done (see [`fold.prepare`](./core/fold.lua)).**
+4. **Some preparation is done (see [`fold.prepare`](./crazywall/core/fold.lua)).**
    - First, paths are resolved for each section.
       - The root section has its `section.path` manually set to the destination path speciffied by the command-line arguments (defaults to the same path as the source file).
       - All other sections are visited [in preorder](https://commons.wikimedia.org/wiki/File:Preorder-traversal.gif) (i.e. outtermost-in). For each section,
@@ -180,8 +180,8 @@ To understand what each config option does, it's helpful to explain what happens
                 - If the function returns `false`, then *all* of the lines of the section will be deleted in the source text.
         - `config.transform_lines(...)` will not be called on the root sectoin.
 
-5. **crazywall executes the fold in dry-run mode (see [`fold.prepare`](./core/fold.lua)).**
-    - Regardless of whether or not `--dry-run` was actually passed, crazywall will always do a dry-run before executing. In this step, a [`Plan`](./core/plan/plan.lua) gets created, detailing all the filesystem changes that will be made.
+5. **crazywall executes the fold in dry-run mode (see [`fold.prepare`](./crazywall/core/fold.lua)).**
+    - Regardless of whether or not `--dry-run` was actually passed, crazywall will always do a dry-run before executing. In this step, a [`Plan`](./crazywall/core/plan/plan.lua) gets created, detailing all the filesystem changes that will be made.
     - The sections are preorder traversed. For each section:
         - If a file or directory already exists at `section.path`
             - and `config.allow_overwrite == true`, then crazywall will continue to the next step.
@@ -244,5 +244,5 @@ So, for example, if a section was assigned the path `Path.void()` and the refere
 
 crazywall makes two important assumptions to keep behavior simple and predictable:
 
-- Two paths with the same string reprsentation are the same, and two paths with different string representations are different. Because of this, **the [`Path`](./core/path.lua) class used only works with absolute paths**, and will throw an error if a relative path is given. To use `"~/"` and `"./"`, see [`Path:join()`](./core/path.lua).
+- Two paths with the same string reprsentation are the same, and two paths with different string representations are different. Because of this, **the [`Path`](./crazywall/core/path.lua) class used only works with absolute paths**, and will throw an error if a relative path is given. To use `"~/"` and `"./"`, see [`Path:join()`](./crazywall/core/path.lua).
 - No relevant filesystem changes occur between running `cw` and confirming. As stated previously, regardless of whether `--dry-run` was passed, crazywall will always do a dry-run before making any filesystem changes. If you run `cw`, then add or delete files, and then confirm, crazywall might nto be able to stick to the plan object it presented to you.
