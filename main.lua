@@ -12,16 +12,16 @@ if script_dir then
 	package.path = script_dir .. "/?.lua;" .. package.path
 end
 
-local fold = require("core.fold")
-local Config = require("core.config")
-local Context = require("core.context")
-local Path = require("core.path")
+local fold = require("crazywall.core.fold")
+local Config = require("crazywall.core.config")
+local Context = require("crazywall.core.context")
+local Path = require("crazywall.core.path")
 local custom_configs = require("configs")
-local Parser = require("core.parser")
-local streams = require("core.streams")
-local utils = require("core.utils")
-local ansi = require("core.ansi")
-local version = require("core.version")
+local Parser = require("crazywall.core.parser")
+local streams = require("crazywall.core.streams")
+local utils = require("crazywall.core.utils")
+local ansi = require("crazywall.core.ansi")
+local version = require("crazywall.core.version")
 
 ---@param text string
 ---@param stream Stream
@@ -143,11 +143,11 @@ end
 
 local source_dir = tostring(assert(Path:new(filename):get_directory()))
 
-local plan_stream = math.tointeger(parser:find("--plan-stream"))
+local plan_stream = tonumber(parser:find("--plan-stream"))
 if parser:find("--plan-stream") and plan_stream == nil then
 	error("Plan stream value is invalid.")
 end
-local text_stream = math.tointeger(parser:find("--text-stream"))
+local text_stream = tonumber(parser:find("--text-stream"))
 if parser:find("--text-stream") and text_stream == nil then
 	error("Text stream value is invalid.")
 end
@@ -171,55 +171,41 @@ if not ctx then
 	error(err)
 end
 
-local root
-root, err = fold.parse(ctx)
-if not root then
-	error(err)
-end
-
-_, err = fold.prepare(root, ctx)
-if err then
-	error(err)
-end
-
-local plan
-plan, err = fold.execute(root, ctx, true)
-if err then
-	error(err)
-end
-
-print_to_stream(
-	"PLAN"
-		.. (ctx.is_dry_run and "(dry-run)" or "")
-		.. ": \n"
-		.. string.gsub(tostring(plan), source_dir, "./")
-		.. "\n",
-	ctx.plan_stream
-)
-if ctx.is_dry_run then
-	print_to_stream(
-		"TEXT (dry run): \n" .. utils.str.join_lines(root:get_lines()),
-		ctx.text_stream
+---@param plan Plan
+---@param is_dry_run boolean
+local display_plan = function(_, plan, is_dry_run)
+	return print_to_stream(
+		("PLAN%s:\n%s\n"):format(
+			(is_dry_run and " (dry-run)" or ""),
+			string.gsub(tostring(plan), source_dir, "./")
+		),
+		ctx.plan_stream
 	)
-	os.exit(0)
 end
 
-if not ctx.auto_confirm then
+---@param lines string[]
+---@param is_dry_run boolean
+local display_lines = function(_, lines, is_dry_run)
+	return print_to_stream(
+		("TEXT%s:\n%s\n"):format(
+			(is_dry_run and " (dry-run)" or ""),
+			utils.str.join_lines(lines)
+		),
+		ctx.plan_stream
+	)
+end
+
+---@return boolean
+local get_confirmation = function ()
 	io.write("Confirm? [Y/N]: ")
+	io.flush()
 	---@type string
 	local result = io.read()
-	if not result or result:sub(1, 1):lower() ~= "y" then
-		print("Exiting.")
-		os.exit(0)
-	end
+	return result and result:sub(1, 1):lower() == "y"
 end
 
-plan, err = fold.execute(root, ctx, false)
+_, err = fold.fold(ctx, display_plan, display_lines, get_confirmation)
+
 if err then
 	error(err)
 end
-
-print_to_stream(
-	"TEXT: \n" .. utils.str.join_lines(root:get_lines()),
-	ctx.text_stream
-)

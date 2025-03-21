@@ -1,11 +1,11 @@
-local utils = require("core.utils")
+local utils = require("crazywall.core.utils")
 local str = utils.str
-local Section = require("core.section")
-local traverse = require("core.traverse")
-local validate = require("core.validate")
-local Plan = require("core.plan.plan")
-local Action = require("core.plan.action")
-local Path = require("core.path")
+local Section = require("crazywall.core.section")
+local traverse = require("crazywall.core.traverse")
+local validate = require("crazywall.core.validate")
+local Plan = require("crazywall.core.plan.plan")
+local Action = require("crazywall.core.plan.action")
+local Path = require("crazywall.core.path")
 
 --- Functions for the primary crazywall operation.
 local M = {}
@@ -61,12 +61,6 @@ M.errors = {
 			.. command
 			.. "\nError: "
 			.. (err or "")
-	end,
-
-	---@param path string
-	---@return string errmsg
-	expected_file_to_be_writable = function(path)
-		return "Expected file " .. tostring(path) .. " to be writable"
 	end,
 }
 
@@ -161,7 +155,7 @@ end
 
 ---@param section_root Section
 ---@param ctx Context
----@return nil
+---@return boolean?
 ---@return string? errmsg
 M.prepare = function(section_root, ctx)
 	---@type { [string]: Section }
@@ -262,6 +256,8 @@ M.prepare = function(section_root, ctx)
 	if err then
 		return nil, err
 	end
+
+	return true
 end
 
 ---@param section_root Section
@@ -431,5 +427,54 @@ M.execute = function(section_root, ctx, is_dry_run)
 	end
 	return plan
 end
+
+---@param ctx Context
+---@param display_plan_func (fun(ctx: Context, plan: Plan, is_dry_run: boolean): nil)?
+---@param display_lines_func (fun(ctx: Context, lines: string[], is_dry_run: boolean): nil)?
+---@param get_confirmation (fun(): boolean)?
+---@return Plan? plan
+---@return string? errmsg
+---@return Section? root
+function M.fold(ctx, display_plan_func, display_lines_func, get_confirmation)
+	display_plan_func = display_plan_func or function() end
+	display_lines_func = display_lines_func or function() end
+	get_confirmation = get_confirmation or function()
+		return true
+	end
+	local root, err = M.parse(ctx)
+	if not root then
+		return nil, err
+	end
+
+	_, err = M.prepare(root, ctx)
+	if err then
+		return nil, err, root
+	end
+
+	local plan
+	plan, err = M.execute(root, ctx, true)
+	if not plan then
+		return nil, err, root
+	end
+
+	display_plan_func(ctx, plan, ctx.is_dry_run)
+	if ctx.is_dry_run then
+		display_lines_func(ctx, root:get_lines(), true)
+		return plan, nil, root
+	end
+
+	if not ctx.auto_confirm and not get_confirmation() then
+		return plan, nil, root
+	end
+
+	plan, err = M.execute(root, ctx, false)
+	if not plan then
+		return nil, err, root
+	end
+
+	display_lines_func(ctx, root:get_lines(), false)
+	return plan, nil, root
+end
+
 
 return M

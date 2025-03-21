@@ -43,8 +43,11 @@ Table of Contents
 ## Installation
 
 ### Requirements
- - Lua 5.3+
+ - LuaJIT
  - A UNIX-based OS
+
+> [!Note]
+> If you wish to use Lua instead, simply replace `luajit` with `lua` in `cw.sh`.
 
 You can install `crazywall` using the following commands:
 
@@ -87,8 +90,8 @@ Here's an example `./configs.lua` setup to use `"[!h]"` for all close tags.
 
 ```lua
 --- ./configs.lua
-local utils = require("core.utils")
-local Path = require("core.path")
+local utils = require("crazywall.core.utils")
+local Path = require("crazywall.core.path")
 
 ---@type table<string, PartialConfigTable>
 local configs = {

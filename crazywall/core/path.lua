@@ -1,5 +1,5 @@
-local validate = require("core.validate")
-local utils = require("core.utils")
+local validate = require("crazywall.core.validate")
+local utils = require("crazywall.core.utils")
 
 --- Representation of a path as a stack of string "parts".
 --- Should always be absolute paths.

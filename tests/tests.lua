@@ -1,5 +1,5 @@
-local utils = require("core.utils")
-local ansi = require("core.ansi")
+local utils = require("crazywall.core.utils")
+local ansi = require("crazywall.core.ansi")
 
 local suites = {}
 for v in utils.str.split_lines(assert(utils.run_command("ls -1 ./tests/*.lua"))) do
@@ -13,12 +13,12 @@ end
 local modules = {}
 for v in
 	utils.str.split_lines(
-		assert(utils.run_command("ls -1 ./core/*.lua ./core/**/*.lua"))
+		assert(utils.run_command("ls -1 ./crazywall/core/*.lua ./crazywall/core/**/*.lua"))
 	)
 do
-	local match = string.match(v or "", "core/(.*)%.lua")
+	local match = string.match(v or "", "crazywall/core/(.*)%.lua")
 	if match ~= "" then
-		modules[#modules + 1] = require("core." .. match:gsub("/", "."))
+		modules[#modules + 1] = require("crazywall.core." .. match:gsub("/", "."))
 	end
 end
 

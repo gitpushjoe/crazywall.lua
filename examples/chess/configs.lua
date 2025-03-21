@@ -1,4 +1,4 @@
-local Path = require("core.path")
+local Path = require("crazywall.core.path")
 
 ---@type table<string, PartialConfigTable>
 local configs = {

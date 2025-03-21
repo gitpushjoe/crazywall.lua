@@ -1,6 +1,6 @@
-local utils = require("core.utils")
-local Path = require("core.path")
-local ansi = require("core.ansi")
+local utils = require("crazywall.core.utils")
+local Path = require("crazywall.core.path")
+local ansi = require("crazywall.core.ansi")
 
 ---@alias CREATE_ACTION { type: "CREATE", path: Path, lines: string[], tostring: fun(self: Action, enable_ansi: boolean?): string }
 ---@alias OVERWRITE_ACTION { type: "OVERWRITE", path: Path, lines: string[], tostring: fun(self: Action, enable_ansi: boolean?): string }

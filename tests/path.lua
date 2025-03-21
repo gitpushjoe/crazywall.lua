@@ -1,5 +1,5 @@
-local Path = require("core.path")
-local utils = require("core.utils")
+local Path = require("crazywall.core.path")
+local utils = require("crazywall.core.utils")
 
 local TEST_path = Suite:new("Path")
 

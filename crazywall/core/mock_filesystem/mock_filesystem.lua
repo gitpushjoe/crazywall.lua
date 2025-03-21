@@ -1,12 +1,13 @@
-local Path = require("core.path")
+local Path = require("crazywall.core.path")
 
 ---@alias MockFile { [string]: MockFile|string }
 
-local MockFS_IO = require("core.mock_filesystem.io")
+local MockFS_IO = require("crazywall.core.mock_filesystem.io")
 
 ---@class MockFilesystem
 ---@field table table
 ---@field io iolib
+---@field _debug_error_on_all_commands boolean
 MockFilesystem = {}
 MockFilesystem.__index = MockFilesystem
 MockFilesystem.__name = "MockFilesystem"

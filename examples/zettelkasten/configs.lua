@@ -1,4 +1,4 @@
-local utils = require("core.utils")
+local utils = require("crazywall.core.utils")
 
 ---@type table<string, PartialConfigTable>
 local configs = {

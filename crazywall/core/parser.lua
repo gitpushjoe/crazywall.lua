@@ -1,4 +1,4 @@
-local validate = require("core.validate")
+local validate = require("crazywall.core.validate")
 
 ---@alias Equivalences table<string, EquivalenceClass|string|nil>
 

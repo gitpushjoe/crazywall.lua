@@ -1,5 +1,5 @@
-local validate = require("core.validate")
-local default_config = require("core.defaults.config")
+local validate = require("crazywall.core.validate")
+local default_config = require("crazywall.core.defaults.config")
 
 --- @alias NoteSchema [string, string, string][]
 

@@ -1,9 +1,8 @@
-local MockFilesystem = require("core.mock_filesystem.mock_filesystem")
-local Config = require("core.config")
-local streams = require("core.streams")
-local utils = require("core.utils")
-local Context = require("core.context")
-local fold = require("core.fold")
+local MockFilesystem = require("crazywall.core.mock_filesystem.mock_filesystem")
+local Config = require("crazywall.core.config")
+local streams = require("crazywall.core.streams")
+local utils = require("crazywall.core.utils")
+local Context = require("crazywall.core.context")
 
 ---@class Suite
 ---@field name string
@@ -26,12 +25,14 @@ function Suite.expect_equal(param1, param2)
 	end
 	local diff_a = assert(io.open("/tmp/crazywall-diff-a.txt", "w"))
 	diff_a:write(tostring(param1))
+	diff_a:close()
 	local diff_b = assert(io.open("/tmp/crazywall-diff-b.txt", "w"))
 	diff_b:write(tostring(param2))
+	diff_b:close()
 	error(
 		"Suite.expect_equal:\n"
 			.. utils.run_command(
-				"diff --side-by-side /tmp/crazywall-diff-a.txt /tmp/crazywall-diff-b.txt"
+				"diff /tmp/crazywall-diff-a.txt /tmp/crazywall-diff-b.txt"
 			)
 	)
 end
@@ -131,26 +132,6 @@ function Suite.make_simple_ctx(config, mock_filesystem)
 			false
 		)
 	)
-end
-
----@param ctx Context
----@param is_dry_run boolean?
----@return Plan?, string?
-function Suite.do_fold(ctx, is_dry_run)
-	local root, err = assert(fold.parse(ctx))
-	if err then
-		return nil, err
-	end
-	_, err = fold.prepare(root, ctx)
-	if err then
-		return nil, err
-	end
-	local plan
-	plan, err = fold.execute(root, ctx, is_dry_run or false)
-	if err then
-		return nil, err
-	end
-	return plan
 end
 
 return Suite

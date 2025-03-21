@@ -1,4 +1,4 @@
-local utils = require("core.utils")
+local utils = require("crazywall.core.utils")
 
 ---@alias Stream 0|1|2
 

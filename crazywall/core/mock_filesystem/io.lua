@@ -1,8 +1,8 @@
-local mock_fs_utils = require("core.mock_filesystem.utils")
-local Handle = require("core.mock_filesystem.handle")
-local ProcessHandle = require("core.mock_filesystem.process_handle")
-local validate = require("core.validate")
-local Path = require("core.path")
+local mock_fs_utils = require("crazywall.core.mock_filesystem.utils")
+local Handle = require("crazywall.core.mock_filesystem.handle")
+local ProcessHandle = require("crazywall.core.mock_filesystem.process_handle")
+local validate = require("crazywall.core.validate")
+local Path = require("crazywall.core.path")
 
 ---@class MockFS_IO
 ---@field mock_filesystem MockFilesystem
@@ -52,6 +52,11 @@ MockFS_IO.errors = {
 	--- @return string
 	cannot_create_directory_file_exists = function(path)
 		return "mkdir: cannot create directory `" .. path .. "`: File exists"
+	end,
+
+	--- @return string
+	manually_forced_error = function()
+		return "This error was manually forced to be raised."
 	end,
 }
 
@@ -103,6 +108,9 @@ local function make_function_popen(self)
 	--- @param command string
 	--- @return MockFS_ProcHandle?, string?
 	return function(command)
+		if self.mock_filesystem._debug_error_on_all_commands then
+			return nil, MockFS_IO.errors.manually_forced_error()
+		end
 		local match = string.gmatch(command, "mkdir %-p '(.*)' 2>%&1")()
 		if not match then
 			return nil,

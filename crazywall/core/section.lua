@@ -1,6 +1,6 @@
-local utils = require("core.utils")
-local validate = require("core.validate")
-local Context = require("core.context")
+local utils = require("crazywall.core.utils")
+local validate = require("crazywall.core.validate")
+local Context = require("crazywall.core.context")
 
 --- Represents a section text in the source file.
 --- Sections may be nested within other sections.
@@ -209,7 +209,7 @@ end
 ---@return string
 function Section:__tostring()
 	return "Section {\n"
-		.. 'id = '
+		.. '\tid = '
 		.. self.id
 		.. '\n\ttype = {"'
 		.. self.type[1]

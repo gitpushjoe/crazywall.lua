@@ -1,8 +1,8 @@
 local Suite = require("tests.suite")
-local Config = require("core.config")
-local fold = require("core.fold")
-local Section = require("core.section")
-local MockFilesystem = require("core.mock_filesystem.mock_filesystem")
+local Config = require("crazywall.core.config")
+local fold = require("crazywall.core.fold")
+local Section = require("crazywall.core.section")
+local MockFilesystem = require("crazywall.core.mock_filesystem.mock_filesystem")
 
 local TEST_Config = Suite:new("Config")
 
@@ -11,7 +11,7 @@ TEST_Config["(simple)"] = function()
 	local mock_filesystem = Suite.make_simple_filesystem()
 	local ctx = Suite.make_simple_ctx(config, mock_filesystem)
 
-	assert(Suite.do_fold(ctx))
+	assert(fold.fold(ctx))
 
 	local expected_filesystem = Suite.make_simple_expected_filesystem()
 	Suite.expect_equal(mock_filesystem, expected_filesystem)
@@ -28,7 +28,7 @@ TEST_Config["resolve_reference (returns false)"] = function()
 	local mock_filesystem = Suite.make_simple_filesystem()
 	local ctx = Suite.make_simple_ctx(config, mock_filesystem)
 
-	assert(Suite.do_fold(ctx))
+	assert(fold.fold(ctx))
 
 	local expected_filesystem = Suite.make_simple_expected_filesystem()
 	expected_filesystem.table.home.tests["note.txt"] = "curly foo\nangle baz"
@@ -43,7 +43,7 @@ x = \frac{-b \pm \sqrt{b^{2} - 4ac}}{2a}
 $$]]
 	local ctx = Suite.make_simple_ctx(config, mock_filesystem)
 
-	assert(Suite.do_fold(ctx))
+	assert(fold.fold(ctx))
 
 	local expected_filesystem = MockFilesystem:new({
 		home = {
@@ -84,7 +84,7 @@ TEST_Config["allow_makedir"] = function()
 	local mock_filesystem = Suite.make_simple_filesystem()
 	local ctx = Suite.make_simple_ctx(config, mock_filesystem)
 
-	assert(not Suite.do_fold(ctx, true))
+	assert(not fold.fold(ctx))
 end
 
 TEST_Config["local_retry_count"] = function()
@@ -101,9 +101,12 @@ TEST_Config["local_retry_count"] = function()
 	local mock_filesystem = Suite.make_simple_filesystem()
 	local ctx = Suite.make_simple_ctx(config, mock_filesystem)
 
-	assert(not Suite.do_fold(ctx, true))
+	local _, err, root = fold.fold(ctx)
+	Suite.expect_error(_, err)(
+		fold.errors.maximum_retry_count(1, assert(root).children[3], true)
+	)
 	config.local_retry_count = 2
-	assert(Suite.do_fold(ctx))
+	assert(fold.fold(ctx))
 
 	local expected_filesystem = MockFilesystem:new({
 		home = {
@@ -127,10 +130,13 @@ TEST_Config["retry_count"] = function()
 	mock_filesystem.table.home.tests["angle baz.txt"] = "baz"
 	local ctx = Suite.make_simple_ctx(config, mock_filesystem)
 
-	assert(not Suite.do_fold(ctx, true))
+	local _, err, root = fold.fold(ctx)
+	Suite.expect_error(_, err)(
+		fold.errors.maximum_retry_count(0, assert(root).children[1], false)
+	)
 	config.retry_count = 2
 	ctx = Suite.make_simple_ctx(config, mock_filesystem)
-	assert(Suite.do_fold(ctx))
+	assert(fold.fold(ctx))
 
 	local expected_filesystem = Suite.make_simple_expected_filesystem()
 	expected_filesystem.table.home.tests["curly foo (1).txt"] = "foo"
@@ -148,7 +154,7 @@ TEST_Config["allow_overwrite"] = function()
 	mock_filesystem.table.home.tests["angle baz.txt"] = "will be overwritten"
 	local ctx = Suite.make_simple_ctx(config, mock_filesystem)
 
-	assert(Suite.do_fold(ctx))
+	assert(fold.fold(ctx))
 
 	local expected_filesystem = Suite.make_simple_expected_filesystem()
 	Suite.expect_equal(mock_filesystem, expected_filesystem)
@@ -167,9 +173,9 @@ TEST_Config["allow_local_overwrite"] = function()
 	local mock_filesystem = Suite.make_simple_filesystem()
 	local ctx = Suite.make_simple_ctx(config, mock_filesystem)
 
-	assert(not Suite.do_fold(ctx, true))
+	assert(not fold.fold(ctx))
 	config.allow_local_overwrite = true
-	assert(Suite.do_fold(ctx))
+	assert(fold.fold(ctx))
 
 	local expected_filesystem = MockFilesystem:new({
 		home = {

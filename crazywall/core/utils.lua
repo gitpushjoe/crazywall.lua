@@ -29,10 +29,17 @@ M.str = {
 	---@param include_empty boolean?
 	---@return string[]
 	split_lines_to_list = function(str, include_empty)
-		local gen = M.str.split_lines(str, include_empty)
 		local res = {}
-		for v in gen do
-			table.insert(res, v)
+		local c = 1
+		for i = 1, #str + 1 do
+			local char = str:byte(i, i)
+			if not char or char == ("\n"):byte() then
+				local part = str:sub(c, i - 1)
+				if not (not include_empty and #part == 0) then
+					table.insert(res, part)
+				end
+				c = i + 1
+			end
 		end
 		return res
 	end,

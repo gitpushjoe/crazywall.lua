@@ -1,4 +1,4 @@
-require("core.section")
+require("crazywall.core.section")
 
 local M = {}
 

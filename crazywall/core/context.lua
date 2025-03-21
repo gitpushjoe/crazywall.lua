@@ -1,9 +1,9 @@
-local utils = require("core.utils")
-local Path = require("core.path")
-local validate = require("core.validate")
+local utils = require("crazywall.core.utils")
+local Path = require("crazywall.core.path")
+local validate = require("crazywall.core.validate")
 local str = utils.str
-local streams = require("core.streams")
-local Config = require("core.config")
+local streams = require("crazywall.core.streams")
+local Config = require("crazywall.core.config")
 
 --- Represents the current state during execution, configuration options, and
 --- command-line arguments.
@@ -149,7 +149,7 @@ function Context:new(
 		and text_stream ~= streams.STDOUT
 		and text_stream ~= streams.STDERR
 	then
-		return nil, Context.errors.invalid_value_for_text_stream(plan_stream)
+		return nil, Context.errors.invalid_value_for_text_stream(text_stream)
 	end
 
 	self.lines = {}
@@ -161,10 +161,7 @@ function Context:new(
 	local lines = {}
 	if type(inp) == type("") then
 		---@cast inp string
-		local data = str.split_lines(inp, true)
-		for line in data do
-			table.insert(lines, line)
-		end
+		lines = str.split_lines_to_list(inp, true)
 	else
 		---@cast inp string[]
 		for i, line in ipairs(inp) do

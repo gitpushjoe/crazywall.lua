@@ -1,5 +1,5 @@
-local Path = require("core.path")
-local utils = require("core.utils")
+local Path = require("crazywall.core.path")
+local utils = require("crazywall.core.utils")
 
 ---@type table<string, PartialConfigTable>
 local configs = {
@@ -65,7 +65,7 @@ local configs = {
 				return output
 			end
 			local verse = starting_verse
-			for verse_txt in utils.str.split_lines(result) do
+			for verse_txt in ipairs(utils.str.split_lines_to_list(result)) do
 				output = output .. "[" .. verse .. "] " .. verse_txt .. " "
 				verse = verse + 1
 				if verse > math.tointeger(ending_verse) then
